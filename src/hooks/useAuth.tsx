@@ -73,27 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (badgeNumber: string, password: string) => {
     try {
-      // First, find the user by badge number
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('badge_number', badgeNumber)
-        .single()
+      // Use RPC function to get email by badge number
+      const { data: email, error: emailError } = await supabase
+        .rpc('get_email_by_badge', { badge_num: badgeNumber })
 
-      if (profileError || !profileData) {
+      if (emailError || !email) {
         return { error: { message: 'Invalid badge number' } }
-      }
-
-      // Get the user's email from auth.users
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profileData.id)
-      
-      if (userError || !userData.user) {
-        return { error: { message: 'User not found' } }
       }
 
       // Sign in with email and password
       const { error } = await supabase.auth.signInWithPassword({
-        email: userData.user.email!,
+        email: email,
         password
       })
       
