@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Use RPC function to get email by badge number
       const { data: email, error: emailError } = await supabase
-        .rpc('get_email_by_badge', { badge_num: badgeNumber })
+        .rpc('get_email_by_badge', { p_badge_number: badgeNumber })
 
       if (emailError || !email) {
         return { error: { message: 'Invalid badge number' } }
