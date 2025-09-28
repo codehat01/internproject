@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Calendar, FileText, Upload, Send, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { Calendar, FileText, Upload, Send, Clock, CheckCircle, XCircle, User } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase, LeaveRequest as LeaveRequestType } from '../lib/supabase'
 import { format } from 'date-fns'
@@ -145,25 +145,29 @@ export function LeaveRequest() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
-          <Calendar className="h-8 w-8 text-blue-600 mr-3" />
-          Leave Request
-        </h1>
-        <p className="text-gray-600">Submit your leave application for approval</p>
+    <div className="space-y-6">
+      {/* Header with Welcome */}
+      <div className="bg-white rounded-xl shadow-lg p-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">OFFICIAL LEAVE</h1>
+          <h2 className="text-2xl font-bold text-gray-900">APPLICATION FORM</h2>
+        </div>
+        <div className="text-right">
+          <p className="text-gray-600">Welcome, Officer</p>
+          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+            <User className="h-5 w-5 text-gray-600" />
+          </div>
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Request Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">New Leave Request</h2>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Request Form - Takes 2/3 width */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-base font-medium text-gray-900 mb-3">
                   Start Date
                 </label>
                 <input
@@ -171,13 +175,13 @@ export function LeaveRequest() {
                   required
                   value={formData.start_date}
                   onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-base font-medium text-gray-900 mb-3">
                   End Date
                 </label>
                 <input
@@ -185,31 +189,39 @@ export function LeaveRequest() {
                   required
                   value={formData.end_date}
                   onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
                   min={formData.start_date || new Date().toISOString().split('T')[0]}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason for Leave
+              <label className="block text-base font-medium text-gray-900 mb-3">
+                Select for Leave
               </label>
               <textarea
                 required
                 value={formData.reason}
                 onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={4}
-                placeholder="Please provide a detailed reason for your leave request..."
+                className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                rows={6}
+                placeholder="Reason"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Supporting Document (Optional)
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-8 rounded-lg font-bold text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'SUBMITTING...' : 'SUBMIT REQUEST'}
+                </button>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-blue-400 transition-colors cursor-pointer">
                 <input
                   type="file"
                   id="attachment"
@@ -218,40 +230,19 @@ export function LeaveRequest() {
                   className="hidden"
                 />
                 <label htmlFor="attachment" className="cursor-pointer">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600">
-                    {attachment ? attachment.name : 'Click to upload document'}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    PDF, DOC, DOCX, JPG, PNG (Max 10MB)
-                  </p>
+                    <FileText className="h-8 w-8 text-gray-400 mb-1" />
+                    <p className="text-xs text-gray-600">Attach Documents</p>
+                    <p className="text-xs text-gray-500">(Optional)</p>
                 </label>
               </div>
+              </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-bold text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center"
-            >
-              {loading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Submitting...
-                </div>
-              ) : (
-                <>
-                  <Send className="h-6 w-6 mr-2" />
-                  Submit Request
-                </>
-              )}
-            </button>
           </form>
         </div>
 
-        {/* Request History */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Your Leave Requests</h2>
+        {/* Request History - Takes 1/3 width */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-6">Past Leave Requests</h3>
           
           {loadingRequests ? (
             <div className="space-y-4">
@@ -268,34 +259,37 @@ export function LeaveRequest() {
               <p className="text-gray-600">No leave requests yet</p>
             </div>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="space-y-4 max-h-80 overflow-y-auto">
               {requests.map((request) => (
                 <div
                   key={request.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <img src="https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=32&h=32&fit=crop" 
+                         alt="Officer" className="w-8 h-8 rounded-full object-cover" />
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        {getStatusIcon(request.status)}
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                          {request.status.toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-gray-900 text-sm">Officer K. Singh</p>
+                      <p className="text-xs text-gray-600">
                         {format(new Date(request.start_date), 'MMM dd')} - {format(new Date(request.end_date), 'MMM dd, yyyy')}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">{request.reason}</p>
-                      {request.admin_reason && (
-                        <p className="text-sm text-red-600 mt-2 bg-red-50 p-2 rounded">
-                          Admin Note: {request.admin_reason}
-                        </p>
-                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-600 mb-1">{request.reason}</p>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        request.status === 'approved' ? 'bg-yellow-500 text-white' :
+                        request.status === 'pending' ? 'bg-blue-900 text-white' :
+                        'bg-red-500 text-white'
+                      }`}>
+                          {request.status.toUpperCase()}
+                        </span>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Submitted: {format(new Date(request.created_at), 'PPp')}
-                  </div>
+                  {request.admin_reason && (
+                    <p className="text-xs text-red-600 mt-2 bg-red-50 p-2 rounded">
+                      Admin Note: {request.admin_reason}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

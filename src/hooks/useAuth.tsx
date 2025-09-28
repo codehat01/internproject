@@ -1,14 +1,15 @@
 import { useState, useEffect, createContext, useContext } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase, Profile } from '../lib/supabase'
+import toast from 'react-hot-toast'
 
 interface AuthContextType {
   user: User | null
   profile: Profile | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: any }>
+  signIn: (badgeNumber: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
-  signUp: (email: string, password: string, profileData: Partial<Profile>) => Promise<{ error: any }>
+  signUp: (badgeNumber: string, password: string, profileData: Partial<Profile>) => Promise<{ error: any }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
+      setLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
       
@@ -36,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        setLoading(true)
         setUser(session?.user ?? null)
         
         if (session?.user) {
@@ -64,15 +67,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error fetching profile:', error)
       setProfile(null)
+      toast.error('Failed to load profile')
     }
   }
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    return { error }
+  const signIn = async (badgeNumber: string, password: string) => {
+    try {
+      // First, find the user by badge number
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('badge_number', badgeNumber)
+        .single()
+
+      if (profileError || !profileData) {
+        return { error: { message: 'Invalid badge number' } }
+      }
+
+      // Get the user's email from auth.users
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profileData.id)
+      
+      if (userError || !userData.user) {
+        return { error: { message: 'User not found' } }
+      }
+
+      // Sign in with email and password
+      const { error } = await supabase.auth.signInWithPassword({
+        email: userData.user.email!,
+        password
+      })
+      
+      return { error }
+    } catch (error: any) {
+      return { error: { message: 'Authentication failed' } }
+    }
   }
 
   const signOut = async () => {
@@ -80,7 +108,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null)
   }
 
-  const signUp = async (email: string, password: string, profileData: Partial<Profile>) => {
+  const signUp = async (badgeNumber: string, password: string, profileData: Partial<Profile>) => {
+    // Generate email from badge number for internal use
+    const email = `${badgeNumber}@police.internal`
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password
@@ -94,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .insert([
           {
             id: data.user.id,
+            badge_number: badgeNumber,
             ...profileData
           }
         ])

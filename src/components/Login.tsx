@@ -4,14 +4,13 @@ import { useAuth } from '../hooks/useAuth'
 import toast from 'react-hot-toast'
 
 export function Login() {
-  const [email, setEmail] = useState('')
+  const [badgeNumber, setBadgeNumber] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [signUpData, setSignUpData] = useState({
     name: '',
-    badge_number: '',
     phone: ''
   })
 
@@ -23,9 +22,8 @@ export function Login() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, {
+        const { error } = await signUp(badgeNumber, password, {
           name: signUpData.name,
-          badge_number: signUpData.badge_number,
           phone: signUpData.phone,
           role: 'user'
         })
@@ -35,12 +33,12 @@ export function Login() {
         } else {
           toast.success('Account created successfully! Please log in.')
           setIsSignUp(false)
-          setEmail('')
+          setBadgeNumber('')
           setPassword('')
-          setSignUpData({ name: '', badge_number: '', phone: '' })
+          setSignUpData({ name: '', phone: '' })
         }
       } else {
-        const { error } = await signIn(email, password)
+        const { error } = await signIn(badgeNumber, password)
         
         if (error) {
           toast.error(error.message)
@@ -245,18 +243,6 @@ export function Login() {
                     />
                   </div>
 
-                  <div>
-                    <input
-                      id="badge_number"
-                      name="badge_number"
-                      type="text"
-                      required
-                      value={signUpData.badge_number}
-                      onChange={(e) => setSignUpData(prev => ({ ...prev, badge_number: e.target.value }))}
-                      className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 bg-gray-50"
-                      placeholder="BADGE NUMBER"
-                    />
-                  </div>
 
                   <div>
                     <input
@@ -274,15 +260,15 @@ export function Login() {
 
               <div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="badgeNumber"
+                  name="badgeNumber"
+                  type="text"
+                  autoComplete="username"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={badgeNumber}
+                  onChange={(e) => setBadgeNumber(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-yellow-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 bg-gray-50 font-medium"
-                  placeholder="USERNAME"
+                  placeholder="BADGE NUMBER"
                 />
               </div>
 
@@ -332,7 +318,7 @@ export function Login() {
                     type="button"
                     className="text-yellow-600 hover:text-yellow-500 font-medium text-sm"
                   >
-                    Forgot Username?
+                    Forgot Badge Number?
                   </button>
                   <br />
                   <button
@@ -360,8 +346,8 @@ export function Login() {
               <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
                 <p className="text-xs text-gray-600 font-medium mb-2 text-center">DEMO ACCOUNTS:</p>
                 <div className="space-y-1 text-xs text-gray-500 text-center">
-                  <p>Admin: admin@police.gov (password: admin123)</p>
-                  <p>Officer: officer@police.gov (password: officer123)</p>
+                  <p>Admin: ADMIN001 (password: admin123)</p>
+                  <p>Officer: OFF001 (password: officer123)</p>
                 </div>
               </div>
             )}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react'
-import { Camera, MapPin, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { Camera, MapPin, Clock, CheckCircle, AlertCircle, Users, Calendar, TrendingUp } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
@@ -10,6 +10,12 @@ export function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null)
+  const [stats, setStats] = useState({
+    totalStaff: 250,
+    pendingLeave: 12,
+    approvedLeave: 88,
+    lateToday: 5
+  })
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -190,59 +196,152 @@ export function Dashboard() {
     setLoading(false)
   }
 
-  if (showCamera) {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Take Your Photo</h2>
-          
-          <div className="relative mb-6">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full h-64 object-cover rounded-lg bg-gray-100"
-            />
-            <canvas
-              ref={canvasRef}
-              className="hidden"
-            />
+  // Admin Dashboard Component
+  const AdminDashboard = () => (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Staff Present Today</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalStaff}</p>
+            </div>
+            <Users className="h-12 w-12 text-blue-500" />
           </div>
+        </div>
 
-          <div className="flex space-x-4">
-            <button
-              onClick={() => completePunch(loading ? 'in' : 'out')}
-              disabled={loading}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors duration-200 flex items-center justify-center"
-            >
-              <Camera className="h-6 w-6 mr-2" />
-              Capture & Punch In
-            </button>
-            
-            <button
-              onClick={cancelPunch}
-              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors duration-200"
-            >
-              Cancel
-            </button>
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pending Leave Requests</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.pendingLeave}</p>
+            </div>
+            <Clock className="h-12 w-12 text-yellow-500" />
           </div>
+        </div>
 
-          {location && (
-            <div className="mt-4 p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center text-green-800">
-                <MapPin className="h-5 w-5 mr-2" />
-                <span className="text-sm">
-                  Location captured: {location.lat.toFixed(6)}, {location.lon.toFixed(6)}
-                </span>
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Approved Leave This Month</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.approvedLeave}</p>
+              <div className="flex items-center mt-1">
+                <span className="text-red-500 text-sm">!</span>
+                <span className="text-xs text-gray-500 ml-1">Late Punch-Ins Today</span>
               </div>
             </div>
-          )}
+            <CheckCircle className="h-12 w-12 text-green-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Daily Attendance Trends</p>
+              <div className="flex items-center space-x-4 mt-2">
+                <div className="text-center">
+                  <div className="w-8 h-16 bg-blue-900 rounded"></div>
+                  <span className="text-xs text-gray-500">Thu</span>
+                </div>
+                <div className="text-center">
+                  <div className="w-8 h-4 bg-yellow-500 rounded"></div>
+                  <span className="text-xs text-gray-500">Tue</span>
+                </div>
+                <div className="text-center">
+                  <div className="w-8 h-12 bg-blue-900 rounded"></div>
+                  <span className="text-xs text-gray-500">Wed</span>
+                </div>
+                <div className="text-center">
+                  <div className="w-8 h-8 bg-gray-400 rounded"></div>
+                  <span className="text-xs text-gray-500">Thu</span>
+                </div>
+                <div className="text-center">
+                  <div className="w-8 h-20 bg-yellow-500 rounded"></div>
+                  <span className="text-xs text-gray-500">Sat</span>
+                </div>
+              </div>
+            </div>
+            <TrendingUp className="h-12 w-12 text-purple-500" />
+          </div>
         </div>
       </div>
-    )
-  }
 
-  return (
+      {/* Charts and Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Attendance Logs */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Attendance Logs</h3>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+              <img src="https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=50&h=50&fit=crop" 
+                   alt="Officer" className="w-10 h-10 rounded-full object-cover" />
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">Officer K. Singh</p>
+                <p className="text-sm text-gray-600">Officer A. Khan</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">09:00 AM</p>
+                <p className="text-sm text-gray-600">05:30 PM</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">09:00 AM</p>
+                <p className="text-sm text-gray-600">05:30 PM</p>
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <MapPin className="h-4 w-4 mr-1" />
+                HQ Building
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pending Leave Requests */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Pending Leave Requests</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <img src="https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&fit=crop" 
+                     alt="Officer" className="w-8 h-8 rounded-full object-cover" />
+                <div>
+                  <p className="font-medium text-gray-900">Officer K. Singh</p>
+                  <p className="text-sm text-gray-600">July 15 - July 17</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Family event</p>
+                <div className="flex space-x-2 mt-1">
+                  <button className="px-3 py-1 bg-blue-900 text-white text-xs rounded">Approve</button>
+                  <button className="px-3 py-1 bg-yellow-500 text-white text-xs rounded">Reject</button>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <img src="https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=40&h=40&fit=crop" 
+                     alt="Officer" className="w-8 h-8 rounded-full object-cover" />
+                <div>
+                  <p className="font-medium text-gray-900">Officer A. Singh</p>
+                  <p className="text-sm text-gray-600">Date2016 - July 17</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">July 15 - July 17</p>
+                <div className="flex space-x-2 mt-1">
+                  <button className="px-3 py-1 bg-blue-900 text-white text-xs rounded">Approve</button>
+                  <button className="px-3 py-1 bg-yellow-500 text-white text-xs rounded">Reject</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  // User Dashboard Component  
+  const UserDashboard = () => (
     <div className="space-y-8">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl shadow-lg p-8 text-white">
@@ -319,4 +418,58 @@ export function Dashboard() {
       </div>
     </div>
   )
+
+  if (showCamera) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Take Your Photo</h2>
+          
+          <div className="relative mb-6">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              className="w-full h-64 object-cover rounded-lg bg-gray-100"
+            />
+            <canvas
+              ref={canvasRef}
+              className="hidden"
+            />
+          </div>
+
+          <div className="flex space-x-4">
+            <button
+              onClick={() => completePunch(loading ? 'in' : 'out')}
+              disabled={loading}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors duration-200 flex items-center justify-center"
+            >
+              <Camera className="h-6 w-6 mr-2" />
+              Capture & Punch In
+            </button>
+            
+            <button
+              onClick={cancelPunch}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+
+          {location && (
+            <div className="mt-4 p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center text-green-800">
+                <MapPin className="h-5 w-5 mr-2" />
+                <span className="text-sm">
+                  Location captured: {location.lat.toFixed(6)}, {location.lon.toFixed(6)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return profile?.role === 'admin' ? <AdminDashboard /> : <UserDashboard />
 }
