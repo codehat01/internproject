@@ -42,14 +42,16 @@ export function Login() {
         
         if (error) {
           toast.error(error.message)
-        } else {
-          toast.success('Welcome back!')
         }
+        // Don't show success toast here, let the auth state change handle it
       }
     } catch (error) {
       toast.error('An unexpected error occurred')
     } finally {
-      setLoading(false)
+      if (isSignUp) {
+        setLoading(false)
+      }
+      // For sign in, loading will be handled by auth state
     }
   }
 

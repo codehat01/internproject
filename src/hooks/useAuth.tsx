@@ -20,38 +20,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      setLoading(true)
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id)
+    let mounted = true
+
+    const initializeAuth = async () => {
+      try {
+        setLoading(true)
+        
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Session error:', error)
+          if (mounted) {
+            setUser(null)
+            setProfile(null)
+            setLoading(false)
+          }
+          return
+        }
+
+        if (mounted) {
+          setUser(session?.user ?? null)
+          
+          if (session?.user) {
+            await fetchProfile(session.user.id)
+          } else {
+            setProfile(null)
+          }
+          
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+        if (mounted) {
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+        }
       }
-      
-      setLoading(false)
     }
 
-    getInitialSession()
+    initializeAuth()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setLoading(true)
-        setUser(session?.user ?? null)
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id)
         
-        if (session?.user) {
-          await fetchProfile(session.user.id)
-        } else {
+        if (!mounted) return
+        
+        try {
+          setUser(session?.user ?? null)
+          
+          if (session?.user) {
+            await fetchProfile(session.user.id)
+          } else {
+            setProfile(null)
+          }
+        } catch (error) {
+          console.error('Auth state change error:', error)
           setProfile(null)
         }
-        
-        setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchProfile = async (userId: string) => {
@@ -62,22 +98,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Profile fetch error:', error)
+        setProfile(null)
+        return
+      }
+      
       setProfile(data)
     } catch (error) {
       console.error('Error fetching profile:', error)
       setProfile(null)
-      toast.error('Failed to load profile')
     }
   }
 
   const signIn = async (badgeNumber: string, password: string) => {
     try {
+      setLoading(true)
+      
       // Use RPC function to get email by badge number
       const { data: email, error: emailError } = await supabase
         .rpc('get_email_by_badge', { p_badge_number: badgeNumber })
 
       if (emailError || !email) {
+        setLoading(false)
         return { error: { message: 'Invalid badge number' } }
       }
 
@@ -87,15 +130,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password
       })
       
+      if (error) {
+        setLoading(false)
+      }
+      
       return { error }
     } catch (error: any) {
+      setLoading(false)
       return { error: { message: 'Authentication failed' } }
     }
   }
 
   const signOut = async () => {
+    setLoading(true)
     await supabase.auth.signOut()
     setProfile(null)
+    setLoading(false)
   }
 
   const signUp = async (badgeNumber: string, password: string, profileData: Partial<Profile>) => {

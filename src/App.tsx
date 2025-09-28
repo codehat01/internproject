@@ -19,12 +19,13 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-xl shadow-lg">
-          <div className="animate-pulse flex items-center space-x-4">
-            <div className="rounded-full bg-blue-300 h-12 w-12"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-blue-300 rounded w-32"></div>
-              <div className="h-4 bg-blue-300 rounded w-24"></div>
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="text-center">
+              <div className="h-4 bg-blue-300 rounded w-32 mb-2 animate-pulse"></div>
+              <div className="h-4 bg-blue-300 rounded w-24 animate-pulse"></div>
             </div>
+            <p className="text-blue-600 font-medium">Loading...</p>
           </div>
         </div>
       </div>
