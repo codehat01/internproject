@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Shield, Eye, EyeOff } from 'lucide-react'
-import { loginWithBadge, validateBadgeNumber, validatePassword } from '../lib/auth'
+import { validateBadgeNumber, validatePassword } from '../lib/auth'
 import { sanitizeInput, rateLimiter, logSecurityEvent, SECURITY_CONFIG } from '../lib/security'
 import { LoginFormData, LoginProps, Notification, User } from '../types'
+import { useAuth } from '../hooks/useAuth'
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const { signInWithBadge } = useAuth() as any
   const [formData, setFormData] = useState<LoginFormData>({
     badgeId: '',
     password: ''
@@ -99,27 +101,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         timestamp: new Date().toISOString()
       });
 
-      // Real Supabase authentication with badge number
-      const { user, profile } = await loginWithBadge(sanitizedBadgeId, sanitizedPassword)
+  // Real Supabase authentication with badge number via hook wrapper
+  const result = await signInWithBadge(sanitizedBadgeId, sanitizedPassword)
 
-      if (!profile) {
+      if (!result || result.error) {
         setLoginAttempts(prev => prev + 1);
-        showNotification('Profile not found!', 'error')
+        showNotification(result?.error?.message || 'Login failed', 'error')
         setLoading(false)
         return
       }
 
-      // Transform profile data to match expected format
-      const userData: User = {
-        id: profile.id,
-        badge_number: profile.badge_number,
-        full_name: profile.name,
-        role: profile.role === 'admin' ? 'admin' : 'staff',
-        rank: profile.rank || 'Officer',
-        station_id: profile.station_id,
-        phone: profile.phone,
-        email: user.email
-      }
+      const userData: User = result.user as User
 
       // Log successful login
       logSecurityEvent('login_success', 'authentication', userData.id, {

@@ -3,127 +3,71 @@ import Login from './components/Login';
 import Landing from './components/Landing';
 import Dashboard from './components/Dashboard';
 import ErrorBoundary from './components/ErrorBoundary';
-import { getCurrentUserProfile, logout, transformProfileToUser } from './lib/auth';
+import { getCurrentUserProfile, transformProfileToUser } from './lib/auth';
 import { supabase } from './lib/supabase';
 import type { User } from './types';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { useAuth } from './hooks/useAuth';
 import './index.css';
 
 function App(): React.JSX.Element {
   const [showLanding, setShowLanding] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [authChecked, setAuthChecked] = useState<boolean>(false);
 
+  // use simplified auth hook
+  const { sessionUser, loading: sessionLoading, initialized, sessionExpired, clearSessionExpired, signOut } = useAuth() as any;
+  // ensure the loading splash remains visible for a short minimum time to avoid flashes
+  const [minDelayOver, setMinDelayOver] = useState<boolean>(false);
+
+  // When sessionUser changes, attempt to load profile and set the app user
   useEffect(() => {
-    let isMounted = true;
-    let checkTimeout: NodeJS.Timeout;
-    
-    console.log('App: Setting up auth listener...');
+    let mounted = true
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
-        console.log('App: Auth state changed:', event, session ? 'Has session' : 'No session');
-
-        if (!isMounted) return;
-
-        try {
-          // Handle signed in and token refreshed events
-          if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-            console.log('App: Getting user profile after sign-in/refresh...');
-            const profile = await getCurrentUserProfile();
-
-            if (profile && isMounted) {
-              const userData = transformProfileToUser(profile, session.user?.email);
-              setUser(userData);
-              console.log('App: User set successfully (auth listener)');
-            } else {
-              console.log('App: Profile missing after auth event');
-            }
-          } else if (event === 'SIGNED_OUT') {
-            setUser(null);
-            console.log('App: User logged out');
-          }
-
-          // Always set loading to false after auth state change
-          if (isMounted) {
-            setLoading(false);
-            setAuthChecked(true);
-          }
-        } catch (error) {
-          console.error('App: Error in auth listener:', error);
-          if (isMounted) {
-            setLoading(false);
-            setAuthChecked(true);
-          }
-        }
-      }
-    );
-
-    // Initial session check with timeout
-    const checkInitialSession = async (): Promise<void> => {
+    const restoreProfile = async () => {
       try {
-        console.log('App: Checking initial session...');
-        // Use getSession which returns the active session if present
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error('App: Error getting session:', error);
-          if (isMounted) {
-            setLoading(false);
-            setAuthChecked(true);
-          }
-          return;
+        if (!sessionUser) {
+          // no session -> ensure app user is null
+          if (mounted) setUser(null)
+          return
         }
 
-        console.log('App: Initial session:', session ? 'Has session' : 'No session');
+        // hide landing immediately for any present session
+        if (mounted) setShowLanding(false)
 
-        if (session && isMounted) {
-          // Ensure we try to restore profile from DB
-          const profile = await getCurrentUserProfile();
-          if (profile && isMounted) {
-            const userData = transformProfileToUser(profile, session.user?.email);
-            setUser(userData);
-            console.log('App: Initial user set (session present)');
-          } else {
-            console.log('App: Session exists but profile missing');
-          }
+        // attempt to fetch profile
+        const profile = await getCurrentUserProfile()
+        if (profile && mounted) {
+          const u = transformProfileToUser(profile, sessionUser.email)
+          setUser(u)
+          console.log('App: Restored user from session')
+        } else {
+          console.warn('App: session present but profile missing; user will stay null until profile is available')
+          // still hide landing but show login if desired; keep user null
         }
-
-        // Always set loading to false after initial check
-        if (isMounted) {
-          setLoading(false);
-          setAuthChecked(true);
-        }
-      } catch (error) {
-        console.error('App: Error checking initial session:', error);
-        if (isMounted) {
-          setLoading(false);
-          setAuthChecked(true);
-        }
+      } catch (err) {
+        console.error('App: Error restoring profile:', err)
+      } finally {
+        // nothing else needed here; App will render once `initialized` is true
       }
-    };
+    }
 
-    // Set a timeout to ensure loading is set to false even if something goes wrong
-    checkTimeout = setTimeout(() => {
-      if (isMounted && loading) {
-        console.log('App: Authentication check timeout, setting loading to false');
-        setLoading(false);
-        setAuthChecked(true);
-      }
-    }, 5000); // 5 second timeout
+    restoreProfile()
 
-    // Check initial session
-    checkInitialSession();
+    return () => { mounted = false }
+  }, [sessionUser])
 
-    return () => {
-      isMounted = false;
-      if (checkTimeout) clearTimeout(checkTimeout);
-      console.log('App: Cleaning up');
-      subscription.unsubscribe();
-    };
-  }, []);
+  // when auth initialization completes, enforce a short minimum loading duration
+  useEffect(() => {
+    let t: number | undefined = undefined
+    if (initialized) {
+      setMinDelayOver(false)
+      // keep loader visible at least 350ms after init to avoid flicker
+      t = window.setTimeout(() => setMinDelayOver(true), 500)
+    } else {
+      setMinDelayOver(false)
+    }
+    return () => { if (t) window.clearTimeout(t) }
+  }, [initialized])
 
   const handleLogin = (userData: User): void => {
     setUser(userData);
@@ -131,7 +75,7 @@ function App(): React.JSX.Element {
 
   const handleLogout = async (): Promise<void> => {
     try {
-      await logout();
+      await signOut();
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
@@ -140,8 +84,8 @@ function App(): React.JSX.Element {
     }
   };
 
-  // Show a nicer loading screen only during initial auth check, with a timeout
-  if (loading && !authChecked) {
+  // Show a nicer loading screen only during initial auth check (wait for auth initialized)
+  if (!initialized || sessionLoading || !minDelayOver) {
     return (
       <div style={{
         display: 'flex',
@@ -192,14 +136,32 @@ function App(): React.JSX.Element {
       </div>
     );
   }
-  // If landing hasn't been dismissed yet, show it and enter to app
-  if (showLanding) {
+  // If landing hasn't been dismissed yet and there is no authenticated user, show it
+  if (showLanding && !user) {
     return <Landing onEnter={() => setShowLanding(false)} />
+  }
+  // session expiry modal handling
+  const handleSessionExpired = () => {
+    // clear flag and force a reload to show login
+    clearSessionExpired()
+    // reload page to show login
+    window.location.reload()
   }
 
   return (
     <ErrorBoundary>
       <div className="App">
+        {sessionExpired && (
+          <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, background: 'rgba(0,0,0,0.4)' }}>
+            <div style={{ background: 'white', padding: 24, borderRadius: 12, maxWidth: 520, width: '90%', textAlign: 'center' }}>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Session expired</div>
+              <div style={{ color: '#6b7280', marginBottom: 16 }}>Your session has ended. Please log in again to continue.</div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                <button onClick={handleSessionExpired} className="btn btn-primary">Log in</button>
+              </div>
+            </div>
+          </div>
+        )}
         {!user ? (
           <Login onLogin={handleLogin} />
         ) : (
