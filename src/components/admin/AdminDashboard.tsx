@@ -60,12 +60,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const attendanceLogs = await getAllAttendanceLogs(5)
       const formattedAttendance = attendanceLogs.map(log => ({
         id: log.id,
-        name: log.profiles.name,
+        name: log.profiles.full_name,
         badge: log.profiles.badge_number,
         timeIn: log.punch_type === 'in' ? new Date(log.timestamp).toLocaleTimeString() : '--',
         timeOut: log.punch_type === 'out' ? new Date(log.timestamp).toLocaleTimeString() : '--',
         location: log.latitude && log.longitude ? 'HQ Building' : 'Unknown',
-        photo: log.profiles.name.split(' ').map(n => n[0]).join(''),
+        photo: log.profiles.full_name.split(' ').map(n => n[0]).join(''),
         timestamp: log.timestamp,
         punchType: log.punch_type
       }))
@@ -78,11 +78,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         .slice(0, 5) // Limit to 5 for dashboard
         .map(request => ({
           id: request.id,
-          name: request.profiles.name,
+          name: request.profiles.full_name,
           badge: request.profiles.badge_number,
           dates: `${new Date(request.start_date).toLocaleDateString()} - ${new Date(request.end_date).toLocaleDateString()}`,
           reason: request.reason,
-          photo: request.profiles.name.split(' ').map(n => n[0]).join('')
+          photo: request.profiles.full_name.split(' ').map(n => n[0]).join('')
         }))
       setPendingLeaveRequests(pendingRequests)
 

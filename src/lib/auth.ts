@@ -157,7 +157,7 @@ export const transformProfileToUser = (profile: Profile, email?: string): User =
   return {
     id: profile.id,
     badge_number: profile.badge_number,
-    full_name: profile.name,
+    full_name: profile.full_name,
     role: profile.role === 'admin' ? 'admin' : 'staff',
     rank: profile.rank || 'Officer',
     station_id: profile.station_id,

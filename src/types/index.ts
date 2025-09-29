@@ -1,7 +1,7 @@
 // Database Types
 export interface Profile {
   id: string;
-  name: string;
+  full_name: string;
   badge_number: string;
   role: 'admin' | 'staff'; // Updated to match database values
   rank?: string;

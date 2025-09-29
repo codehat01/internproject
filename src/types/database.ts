@@ -5,7 +5,7 @@ export interface Database {
       profiles: {
         Row: {
           id: string;
-          name: string;
+          full_name: string;
           badge_number: string;
           role: 'admin' | 'staff';
           station_id: string;
@@ -15,7 +15,7 @@ export interface Database {
         };
         Insert: {
           id: string;
-          name: string;
+          full_name: string;
           badge_number: string;
           role?: 'admin' | 'staff';
           station_id?: string;
@@ -25,7 +25,7 @@ export interface Database {
         };
         Update: {
           id?: string;
-          name?: string;
+          full_name?: string;
           badge_number?: string;
           role?: 'admin' | 'staff';
           station_id?: string;
