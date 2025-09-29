@@ -62,7 +62,7 @@ function App(): React.JSX.Element {
     if (initialized) {
       setMinDelayOver(false)
       // keep loader visible at least 350ms after init to avoid flicker
-      t = window.setTimeout(() => setMinDelayOver(true), 500)
+      t = window.setTimeout(() => setMinDelayOver(true), 1000)
     } else {
       setMinDelayOver(false)
     }
