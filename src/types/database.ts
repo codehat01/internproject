@@ -10,6 +10,7 @@ export interface Database {
           role: 'admin' | 'staff';
           station_id: string;
           phone: string | null;
+          department: string | null;
           email: string | null; // Add email field
           created_at: string;
         };
@@ -20,6 +21,7 @@ export interface Database {
           role?: 'admin' | 'staff';
           station_id?: string;
           phone?: string | null;
+          department?: string | null;
           email?: string | null; // Add email field
           created_at?: string;
         };
@@ -30,6 +32,7 @@ export interface Database {
           role?: 'admin' | 'staff';
           station_id?: string;
           phone?: string | null;
+          department?: string | null;
           email?: string | null; // Add email field
           created_at?: string;
         };
