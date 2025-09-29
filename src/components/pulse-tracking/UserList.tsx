@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Users, Activity, Calendar, Shield } from 'lucide-react';
+import { Search, ListFilter as Filter, Users, Activity, Calendar, Shield } from 'lucide-react';
 import { usePulseUsers } from './hooks/usePulseData';
 import UserCard from './UserCard';
 
