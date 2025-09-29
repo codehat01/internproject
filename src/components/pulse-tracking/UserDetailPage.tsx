@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Clock, Activity, CheckCircle, XCircle, AlertCircle, Shield } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Clock, Activity, CircleCheck as CheckCircle, Circle as XCircle, CircleAlert as AlertCircle, Shield } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { usePulseUserDetail } from './hooks/usePulseData';
 
