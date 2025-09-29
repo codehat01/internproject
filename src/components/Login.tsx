@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Shield, Eye, EyeOff, User, Lock } from 'lucide-react'
 import { validateBadgeNumber, validatePassword } from '../lib/auth'
 import { sanitizeInput, rateLimiter, logSecurityEvent, SECURITY_CONFIG } from '../lib/security'
-import { LoginFormData, LoginProps, Notification, User } from '../types'
+import { LoginFormData, LoginProps, Notification, User as UserType } from '../types'
 import { useAuth } from '../hooks/useAuth'
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -111,7 +111,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         return
       }
 
-      const userData: User = result.user as User
+      const userData: UserType = result.user as UserType
 
       // Log successful login
       logSecurityEvent('login_success', 'authentication', userData.id, {
