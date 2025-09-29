@@ -35,6 +35,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeSection, setActiveSection] = useState<string>('dashboard')
   const [notification, setNotification] = useState<Notification>({ message: '', type: 'info', show: false })
   const [profileOpen, setProfileOpen] = useState<boolean>(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false)
 
   const showNotification = (message: string, type: Notification['type']): void => {
     setNotification({ message, type, show: true })
@@ -127,70 +128,76 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
   return (
     <div className="dashboard">
-      <header className="header">
+      <header className="dashboard-header">
         <div className="header-left">
-          <div className="emblem" style={{ width: '40px', height: '40px', fontSize: '16px' }}>
-            <Shield size={20} />
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            ☰
+          </button>
+          <div className="header-emblem">
+            <Shield size={24} />
           </div>
-          <span className="header-title">POLICE ATTENDANCE SYSTEM</span>
+          <div className="header-title-container">
+            <span className="header-title">POLICE ATTENDANCE</span>
+            <span className="header-subtitle">SYSTEM</span>
+          </div>
         </div>
-        <div className="user-info">
-          <div style={{ textAlign: 'right', marginRight: '10px' }}>
-            <div style={{ fontWeight: '600', color: 'var(--white)' }}>
-              Welcome, {user.full_name}
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--golden)', textTransform: 'uppercase' }}>
+        <div className="header-right">
+          <div className="user-info">
+            <div className="user-name">Welcome, {user.full_name}</div>
+            <div className="user-role">
               {user.role === 'admin' ? '👑 Administrator' : '👮 Officer'} • {user.badge_number}
             </div>
           </div>
-          {/* Avatar + dropdown for profile */}
-          <div style={{ position: 'relative' }}>
-            <img
-              src={user.avatar_url || '/vite.svg'}
-              alt="avatar"
-              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', cursor: 'pointer', border: '2px solid rgba(255,255,255,0.12)' }}
+          <div className="user-avatar-container">
+            <div 
+              className="user-avatar"
               onClick={() => setProfileOpen(prev => !prev)}
-            />
-            {profileOpen && (
-              <div className="profile-dropdown" style={{ position: 'absolute', right: 0, top: '44px', background: 'white', color: '#111', borderRadius: 6, boxShadow: '0 6px 18px rgba(0,0,0,0.12)', minWidth: 220, zIndex: 40 }}>
-                <div style={{ padding: 12, borderBottom: '1px solid #eee', display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <img src={user.avatar_url || '/vite.svg'} alt="avatar" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{user.full_name}</div>
-                    <div style={{ fontSize: 12, color: '#666' }}>{user.email}</div>
-                    <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>{user.role === 'admin' ? 'Administrator' : 'Officer'}</div>
-                  </div>
-                </div>
-                <div style={{ padding: 10 }}>
-                  <button className="btn" style={{ width: '100%', marginBottom: 8 }} onClick={() => alert('Profile view coming soon')}>View Profile</button>
-                  <button className="btn btn-golden" style={{ width: '100%' }} onClick={handleLogout}>Logout</button>
-                </div>
-              </div>
-            )}
+            >
+              {user.full_name.split(' ').map(n => n[0]).join('')}
+            </div>
           </div>
         </div>
       </header>
 
       <div className="main-content">
-        <nav className="sidebar">
+        <nav className={`sidebar ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
+          <div className="sidebar-header">
+            <div className="sidebar-logo">
+              <Shield size={32} />
+            </div>
+            <button 
+              className="sidebar-close"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              ×
+            </button>
+          </div>
           {menuItems.map((item) => {
             const Icon = item.icon
             return (
               <div
                 key={item.id}
-                className={`nav-item ${activeSection === item.id ? 'active' : ''}`}
-                onClick={() => setActiveSection(item.id)}
+                className={`nav-item ${activeSection === item.id ? 'nav-item-active' : ''}`}
+                onClick={() => {
+                  setActiveSection(item.id)
+                  setMobileMenuOpen(false)
+                }}
               >
-                <Icon size={20} />
-                <span>{item.label}</span>
+                <Icon size={22} />
+                <span className="nav-item-text">{item.label}</span>
               </div>
             )
           })}
-          <div className="nav-item" onClick={handleLogout}>
-            <LogOut size={20} />
-            <span>Logout</span>
+          <div className="nav-item nav-item-logout" onClick={handleLogout}>
+            <LogOut size={22} />
+            <span className="nav-item-text">Logout</span>
           </div>
         </nav>
+
+        {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />}
 
         <main className="content-area">
           {renderContent()}

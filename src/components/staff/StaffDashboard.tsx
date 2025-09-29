@@ -127,9 +127,9 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
       </h2>
 
       {/* Quick Actions */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '25px', marginBottom: '30px' }}>
+      <div className="quick-actions-grid">
         {/* Punch In/Out Card */}
-        <div className="card" style={{ textAlign: 'center' }}>
+        <div className="card punch-card">
           <h3 className="card-title">Attendance</h3>
           <div 
             className="punch-button" 
@@ -172,12 +172,12 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
         </div>
 
         {/* Quick Leave Request */}
-        <div className="card">
+        <div className="card quick-actions-card">
           <h3 className="card-title">Quick Actions</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div className="quick-actions-buttons">
             <button 
               className="btn btn-golden" 
-              style={{ padding: '15px', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              className="btn btn-golden action-btn"
               onClick={() => showNotification('Redirecting to leave request form...', 'info')}
             >
               <FileText size={20} />
@@ -185,7 +185,7 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
             </button>
             <button 
               className="btn btn-primary" 
-              style={{ padding: '15px', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              className="btn btn-primary action-btn"
               onClick={() => showNotification('Opening attendance history...', 'info')}
             >
               <Calendar size={20} />
@@ -198,30 +198,30 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
       {/* Attendance Summary */}
       <div className="card" style={{ marginBottom: '30px' }}>
         <h3 className="card-title">This Month's Attendance Summary</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-          <div style={{ textAlign: 'center', padding: '20px', background: 'var(--light-gray)', borderRadius: '10px' }}>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--green)', marginBottom: '10px' }}>
+        <div className="attendance-summary-grid">
+          <div className="summary-item summary-present">
+            <div className="summary-number">
               {attendanceSummary.presentDays}
             </div>
-            <div style={{ color: 'var(--dark-gray)', fontWeight: '600' }}>Present Days</div>
+            <div className="summary-label">Present Days</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '20px', background: 'var(--light-gray)', borderRadius: '10px' }}>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--red)', marginBottom: '10px' }}>
+          <div className="summary-item summary-absent">
+            <div className="summary-number">
               {attendanceSummary.absentDays}
             </div>
-            <div style={{ color: 'var(--dark-gray)', fontWeight: '600' }}>Absent Days</div>
+            <div className="summary-label">Absent Days</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '20px', background: 'var(--light-gray)', borderRadius: '10px' }}>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--golden)', marginBottom: '10px' }}>
+          <div className="summary-item summary-late">
+            <div className="summary-number">
               {attendanceSummary.lateDays}
             </div>
-            <div style={{ color: 'var(--dark-gray)', fontWeight: '600' }}>Late Days</div>
+            <div className="summary-label">Late Days</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '20px', background: 'var(--light-gray)', borderRadius: '10px' }}>
-            <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--navy-blue)', marginBottom: '10px' }}>
+          <div className="summary-item summary-rate">
+            <div className="summary-number">
               {Math.round((attendanceSummary.presentDays / attendanceSummary.totalWorkingDays) * 100)}%
             </div>
-            <div style={{ color: 'var(--dark-gray)', fontWeight: '600' }}>Attendance Rate</div>
+            <div className="summary-label">Attendance Rate</div>
           </div>
         </div>
       </div>

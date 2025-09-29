@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Eye, EyeOff } from 'lucide-react'
+import { Shield, Eye, EyeOff, User, Lock } from 'lucide-react'
 import { validateBadgeNumber, validatePassword } from '../lib/auth'
 import { sanitizeInput, rateLimiter, logSecurityEvent, SECURITY_CONFIG } from '../lib/security'
 import { LoginFormData, LoginProps, Notification, User } from '../types'
@@ -185,47 +185,76 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className="login-container">
-      <div className="emblem-bg" />
-      <div className="login-card transform transition duration-500 ease-out animate-fade-in">
-          <div className="flex flex-col items-center">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-b from-navy to-[#0f2951] flex items-center justify-center mb-3">
-              <Shield className="text-white" size={40} />
+      <div className="login-card">
+        <div className="login-header">
+          <div className="login-emblem">
+            <Shield size={32} />
+          </div>
+          <h2 className="login-title">POLICE ATTENDANCE SYSTEM</h2>
+          <p className="login-subtitle">Secure government attendance and reporting</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label className="form-label">Badge ID</label>
+            <div className="input-wrapper">
+              <User size={20} className="input-icon" />
+              <input 
+                name="badgeId" 
+                value={formData.badgeId} 
+                onChange={handleChange} 
+                required
+                className="form-input" 
+                placeholder="Enter your badge ID" 
+              />
             </div>
-            <h2 className="text-xl md:text-2xl font-bold text-navy uppercase">Police Attendance System</h2>
-            <p className="text-sm text-gray-500 mt-1">Secure government attendance and reporting</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-6">
-            <label className="block text-xs text-gray-500 mb-2">Username</label>
-            <input name="badgeId" value={formData.badgeId} onChange={handleChange} required
-              className="w-full px-3 py-2 rounded-lg border-2 border-golden focus:border-navy outline-none mb-3 text-sm" placeholder="Enter badge id" />
-
-            <label className="block text-xs text-gray-500 mb-2">Password</label>
-            <div className="relative">
-              <input name="password" value={formData.password} onChange={handleChange} required type={showPassword ? 'text' : 'password'}
-                className="w-full px-3 py-2 rounded-lg border-2 border-golden focus:border-navy outline-none text-sm" placeholder="Password" />
-              <button type="button" onClick={togglePasswordVisibility} className="absolute right-3 top-2 text-gray-600">
-                {showPassword ? <EyeOff /> : <Eye />}
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <div className="input-wrapper">
+              <Lock size={20} className="input-icon" />
+              <input 
+                name="password" 
+                value={formData.password} 
+                onChange={handleChange} 
+                required 
+                type={showPassword ? 'text' : 'password'}
+                className="form-input" 
+                placeholder="Enter your password" 
+              />
+              <button 
+                type="button" 
+                onClick={togglePasswordVisibility} 
+                className="password-toggle"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-
-            <button type="submit" disabled={loading || isBlocked}
-              className="mt-5 w-full bg-navy text-white py-2.5 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition text-sm">
-              {isBlocked ? `Blocked (${Math.ceil(blockTimeRemaining/60)}m)` : loading ? 'Logging in...' : 'Login'}
-            </button>
-
-            <div className="flex justify-between mt-3 text-sm">
-              <a href="#" onClick={(e) => { e.preventDefault(); showNotification('Feature coming soon!', 'info') }} className="text-golden">Forgot Username?</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); showNotification('Feature coming soon!', 'info') }} className="text-gray-500">Forgot Password?</a>
-            </div>
-          </form>
-
-          <div className="text-center text-xs text-gray-400 mt-6">GOVERNMENT OF [REPUBLIC OF NAME] • © 2024</div>
-
-          <div className={`notification ${notification.type} ${notification.show ? 'show' : ''}`}>
-            {notification.message}
           </div>
+
+          <button 
+            type="submit" 
+            disabled={loading || isBlocked}
+            className="login-btn"
+          >
+            {isBlocked ? `Blocked (${Math.ceil(blockTimeRemaining/60)}m)` : loading ? 'Logging in...' : 'LOGIN'}
+          </button>
+
+          <div className="login-links">
+            <a href="#" onClick={(e) => { e.preventDefault(); showNotification('Feature coming soon!', 'info') }}>Forgot Username?</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); showNotification('Feature coming soon!', 'info') }}>Forgot Password?</a>
+          </div>
+        </form>
+
+        <div className="login-footer">
+          GOVERNMENT OF INDIA • © 2024
         </div>
+
+        <div className={`notification ${notification.type} ${notification.show ? 'show' : ''}`}>
+          {notification.message}
+        </div>
+      </div>
     </div>
   )
 }
