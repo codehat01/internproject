@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Shield, User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Video as LucideIcon } from 'lucide-react'
+import { Shield, User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Activity, Video as LucideIcon } from 'lucide-react'
 
 // Import organized components
 import AdminDashboard from './admin/AdminDashboard'
@@ -9,6 +9,7 @@ import LeaveRequestView from './staff/LeaveRequestView'
 import UserManagement from './admin/UserManagement'
 import ScheduleView from './staff/ScheduleView'
 import EmergencyView from './staff/EmergencyView'
+import PulseTrackingMain from './pulse-tracking/PulseTrackingMain'
 import { DashboardProps, Notification, User as UserType } from '../types'
 
 interface MenuItem {
@@ -49,6 +50,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
   // Admin-only menu items
   const adminMenuItems: MenuItem[] = [
+    { id: 'pulse-tracking', label: 'Pulse Tracking', icon: Activity },
     { id: 'attendance-logs', label: 'Attendance Logs', icon: ClipboardList },
     { id: 'leave-management', label: 'Leave Management', icon: FileText },
     { id: 'user-management', label: 'User Management', icon: Users },
@@ -59,6 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const menuItems: MenuItem[] = user.role === 'admin' 
     ? [
         { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
+        { id: 'pulse-tracking', label: 'Pulse Tracking', icon: Activity },
         { id: 'user-management', label: 'User Management', icon: Users },
         { id: 'attendance-logs', label: 'Attendance Logs', icon: ClipboardList },
         { id: 'leave-management', label: 'Leave Management', icon: FileText },
@@ -74,6 +77,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       switch (activeSection) {
         case 'dashboard':
           return <AdminDashboard user={user} />
+        case 'pulse-tracking':
+          return <PulseTrackingMain />
         case 'user-management':
           return <UserManagement />
         case 'attendance-logs':

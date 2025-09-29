@@ -7,6 +7,7 @@ export interface Profile {
   rank?: string;
   station_id: string;
   phone?: string;
+  department?: string;
   email?: string; // Add email field
   avatar_url?: string; // optional avatar image url
   created_at: string;

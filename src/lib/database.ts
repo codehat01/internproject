@@ -229,7 +229,10 @@ export const getAllProfiles = async (): Promise<Profile[]> => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(`
+        *,
+        department
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
