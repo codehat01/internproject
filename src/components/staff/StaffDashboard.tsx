@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  Clock, 
-  Calendar, 
-  FileText, 
-  CheckCircle,
-  XCircle,
-  AlertCircle
-} from 'lucide-react'
+import { Clock, Calendar, FileText, CircleCheck as CheckCircle, Circle as XCircle, CircleAlert as AlertCircle } from 'lucide-react'
 import { getUserAttendanceSummary, getUserLeaveRequests, punchInOut } from '../../lib/database'
 import { StaffDashboardProps, Notification, AttendanceSummary } from '../../types'
 

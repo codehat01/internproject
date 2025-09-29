@@ -1,19 +1,5 @@
 import React, { useState } from 'react'
-import { 
-  Shield, 
-  User, 
-  LayoutDashboard, 
-  Calendar, 
-  FileText, 
-  History, 
-  BarChart3, 
-  Settings, 
-  LogOut,
-  Users,
-  ClipboardList,
-  AlertTriangle,
-  LucideIcon
-} from 'lucide-react'
+import { Shield, User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Video as LucideIcon } from 'lucide-react'
 
 // Import organized components
 import AdminDashboard from './admin/AdminDashboard'
