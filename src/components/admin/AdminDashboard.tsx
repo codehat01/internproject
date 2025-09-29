@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  Users, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle,
-  BarChart3,
-  MapPin,
-  Calendar
-} from 'lucide-react'
+import { Users, Clock, CircleCheck as CheckCircle, CircleAlert as AlertCircle, ChartBar as BarChart3, MapPin, Calendar } from 'lucide-react'
 import { getDashboardStats, getAllAttendanceLogs, getAllLeaveRequests, updateLeaveRequestStatus } from '../../lib/database'
 import { AdminDashboardProps, Notification, DashboardStats } from '../../types'
 
