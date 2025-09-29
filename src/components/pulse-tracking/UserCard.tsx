@@ -12,26 +12,39 @@ const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'On Duty':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'status-present';
       case 'On Leave':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'status-late';
       case 'Absent':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'status-absent';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'status-absent';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'On Duty':
-        return <Shield className="w-3 h-3" />;
+        return <Shield size={14} />;
       case 'On Leave':
-        return <Calendar className="w-3 h-3" />;
+        return <Calendar size={14} />;
       case 'Absent':
-        return <Clock className="w-3 h-3" />;
+        return <Clock size={14} />;
       default:
-        return <User className="w-3 h-3" />;
+        return <User size={14} />;
+    }
+  };
+
+  const getStatusDotColor = (status: string) => {
+    switch (status) {
+      case 'On Duty':
+        return 'var(--green)';
+      case 'On Leave':
+        return 'var(--golden)';
+      case 'Absent':
+        return 'var(--red)';
+      default:
+        return 'var(--dark-gray)';
     }
   };
 
@@ -39,8 +52,8 @@ const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
     <motion.div
       whileHover={{ 
         scale: 1.05,
-        y: -5,
-        boxShadow: "0 20px 40px rgba(0,0,0,0.15)"
+        y: -8,
+        boxShadow: "0 25px 50px rgba(10, 31, 68, 0.2)"
       }}
       whileTap={{ scale: 0.98 }}
       transition={{ 
@@ -49,63 +62,169 @@ const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
         damping: 20 
       }}
       onClick={onClick}
-      className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 cursor-pointer hover:border-blue-200 transition-all duration-300"
+      className="card"
+      style={{
+        cursor: 'pointer',
+        position: 'relative',
+        overflow: 'hidden',
+        border: '2px solid transparent',
+        background: 'linear-gradient(135deg, var(--white) 0%, #f8f9fa 100%)',
+        transition: 'all 0.3s ease'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--golden)';
+        e.currentTarget.style.transform = 'translateY(-5px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'transparent';
+        e.currentTarget.style.transform = 'translateY(0)';
+      }}
     >
       {/* Profile Picture */}
-      <div className="flex justify-center mb-4">
-        <div className="relative">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-900 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+        <div style={{ position: 'relative' }}>
+          <div 
+            className="profile-img"
+            style={{
+              width: '80px',
+              height: '80px',
+              background: 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
+              fontSize: '24px',
+              boxShadow: '0 10px 30px rgba(10, 31, 68, 0.3)',
+              border: '4px solid var(--white)'
+            }}
+          >
             {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
           </div>
           {/* Status Indicator */}
-          <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white ${
-            user.status === 'On Duty' ? 'bg-green-500' :
-            user.status === 'On Leave' ? 'bg-yellow-500' : 'bg-red-500'
-          }`} />
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: '-2px',
+              right: '-2px',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              border: '3px solid var(--white)',
+              backgroundColor: getStatusDotColor(user.status),
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}
+          />
         </div>
       </div>
 
       {/* User Info */}
-      <div className="text-center space-y-3">
-        <div>
-          <h3 className="font-bold text-gray-900 text-lg leading-tight">
-            {user.full_name}
-          </h3>
-          <p className="text-sm text-gray-600 font-medium">
-            {user.badge_number}
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h3 style={{ 
+          color: 'var(--navy-blue)', 
+          fontSize: '18px', 
+          fontWeight: '700',
+          marginBottom: '8px',
+          lineHeight: '1.2'
+        }}>
+          {user.full_name}
+        </h3>
+        <p style={{ 
+          color: 'var(--dark-gray)', 
+          fontSize: '14px', 
+          fontWeight: '600',
+          marginBottom: '4px'
+        }}>
+          {user.badge_number}
+        </p>
+        {user.rank && (
+          <p style={{ 
+            color: 'var(--golden)', 
+            fontSize: '12px',
+            fontWeight: '500',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            {user.rank}
           </p>
-          {user.rank && (
-            <p className="text-xs text-gray-500 mt-1">
-              {user.rank}
-            </p>
-          )}
-        </div>
-
-        {/* Status Badge */}
-        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${getStatusColor(user.status)}`}>
-          {getStatusIcon(user.status)}
-          {user.status}
-        </div>
-
-        {/* Last Seen */}
-        {user.lastSeen && (
-          <p className="text-xs text-gray-400">
-            Last seen: {new Date(user.lastSeen).toLocaleTimeString()}
-          </p>
-        )}
-
-        {/* Department */}
-        {user.department && (
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-xs text-gray-500">
-              {user.department}
-            </p>
-          </div>
         )}
       </div>
 
+      {/* Status Badge */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+        <span 
+          className={`status-badge ${getStatusColor(user.status)}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 16px',
+            borderRadius: '25px',
+            fontSize: '12px',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {getStatusIcon(user.status)}
+          {user.status}
+        </span>
+      </div>
+
+      {/* Last Seen */}
+      {user.lastSeen && (
+        <div style={{ 
+          textAlign: 'center',
+          padding: '10px',
+          background: 'rgba(10, 31, 68, 0.05)',
+          borderRadius: '8px',
+          marginBottom: '10px'
+        }}>
+          <p style={{ 
+            color: 'var(--dark-gray)', 
+            fontSize: '11px',
+            margin: 0
+          }}>
+            Last seen: {new Date(user.lastSeen).toLocaleTimeString()}
+          </p>
+        </div>
+      )}
+
+      {/* Department */}
+      {user.department && (
+        <div style={{ 
+          textAlign: 'center',
+          borderTop: '1px solid #e9ecef',
+          paddingTop: '12px'
+        }}>
+          <p style={{ 
+            color: 'var(--dark-gray)', 
+            fontSize: '12px',
+            fontWeight: '500',
+            margin: 0
+          }}>
+            {user.department}
+          </p>
+        </div>
+      )}
+
       {/* Hover Effect Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-yellow-500/5 rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(10, 31, 68, 0.05) 100%)',
+          opacity: 0,
+          transition: 'opacity 0.3s ease',
+          pointerEvents: 'none',
+          borderRadius: '15px'
+        }}
+        className="hover-overlay"
+      />
+
+      <style jsx>{`
+        .card:hover .hover-overlay {
+          opacity: 1;
+        }
+      `}</style>
     </motion.div>
   );
 };

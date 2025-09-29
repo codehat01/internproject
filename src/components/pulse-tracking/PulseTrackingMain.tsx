@@ -15,16 +15,20 @@ const PulseTrackingMain: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+      padding: 'clamp(15px, 4vw, 30px)'
+    }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         <AnimatePresence mode="wait">
           {selectedUser ? (
             <motion.div
               key="detail"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
             >
               <UserDetailPage 
                 badgeNumber={selectedUser} 
@@ -34,10 +38,10 @@ const PulseTrackingMain: React.FC = () => {
           ) : (
             <motion.div
               key="list"
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, x: 30 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
             >
               <UserList onUserSelect={handleUserSelect} />
             </motion.div>

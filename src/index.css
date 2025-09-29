@@ -1114,3 +1114,338 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #b8941f;
 }
+
+/* Pulse Tracking Specific Styles */
+.pulse-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(10, 31, 68, 0.1);
+  border: 2px solid transparent;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(10, 31, 68, 0.02) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.pulse-card:hover::before {
+  opacity: 1;
+}
+
+.pulse-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 60px rgba(10, 31, 68, 0.15);
+  border-color: var(--golden);
+}
+
+/* Enhanced Profile Images */
+.pulse-profile-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--navy-blue), #0f2951);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-weight: bold;
+  font-size: 24px;
+  box-shadow: 0 12px 40px rgba(10, 31, 68, 0.3);
+  border: 4px solid var(--white);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.pulse-profile-img:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 16px 50px rgba(10, 31, 68, 0.4);
+}
+
+/* Status Indicators */
+.pulse-status-dot {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 4px solid var(--white);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-glow {
+  from {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  to {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 20px currentColor;
+  }
+}
+
+.pulse-status-on-duty {
+  background-color: var(--green);
+  color: var(--green);
+}
+
+.pulse-status-on-leave {
+  background-color: var(--golden);
+  color: var(--golden);
+}
+
+.pulse-status-absent {
+  background-color: var(--red);
+  color: var(--red);
+}
+
+/* Enhanced Status Badges */
+.pulse-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 25px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.pulse-status-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.pulse-status-badge.status-present {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.05) 100%);
+  color: var(--green);
+  border-color: rgba(40, 167, 69, 0.3);
+}
+
+.pulse-status-badge.status-late {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+  color: var(--golden);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.pulse-status-badge.status-absent {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.05) 100%);
+  color: var(--red);
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
+/* Enhanced Stats Cards */
+.pulse-stat-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(10, 31, 68, 0.08);
+  border-left: 6px solid var(--golden);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.03) 0%, rgba(10, 31, 68, 0.01) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pulse-stat-card:hover::before {
+  opacity: 1;
+}
+
+.pulse-stat-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 60px rgba(10, 31, 68, 0.15);
+}
+
+.pulse-stat-number {
+  font-size: 48px;
+  font-weight: 900;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--navy-blue) 0%, #0f2951 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pulse-stat-label {
+  color: var(--dark-gray);
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Loading Animation */
+.pulse-loading {
+  display: inline-block;
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(212, 175, 55, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--golden);
+  animation: pulse-spin 1s ease-in-out infinite;
+}
+
+@keyframes pulse-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Enhanced Form Controls for Pulse Tracking */
+.pulse-form-control {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 15px;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--white);
+  color: var(--navy-blue);
+}
+
+.pulse-form-control:focus {
+  border-color: var(--golden);
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+  transform: translateY(-2px);
+}
+
+.pulse-form-control::placeholder {
+  color: var(--dark-gray);
+  opacity: 0.7;
+}
+
+/* Enhanced Tables for Pulse Tracking */
+.pulse-table-container {
+  background: var(--white);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(10, 31, 68, 0.08);
+  border: 1px solid #e9ecef;
+}
+
+.pulse-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pulse-table th {
+  background: linear-gradient(135deg, var(--navy-blue) 0%, #0f2951 100%);
+  color: var(--white);
+  padding: 20px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pulse-table td {
+  padding: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 15px;
+  transition: background-color 0.2s ease;
+}
+
+.pulse-table tbody tr:hover {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(10, 31, 68, 0.02) 100%);
+}
+
+/* Responsive Design for Pulse Tracking */
+@media (max-width: 1024px) {
+  .pulse-stat-card {
+    padding: 25px;
+  }
+  
+  .pulse-stat-number {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pulse-card {
+    padding: 20px;
+    border-radius: 15px;
+  }
+  
+  .pulse-profile-img {
+    width: 70px;
+    height: 70px;
+    font-size: 20px;
+  }
+  
+  .pulse-status-dot {
+    width: 24px;
+    height: 24px;
+    border-width: 3px;
+  }
+  
+  .pulse-stat-card {
+    padding: 20px;
+  }
+  
+  .pulse-stat-number {
+    font-size: 28px;
+  }
+  
+  .pulse-stat-label {
+    font-size: 14px;
+  }
+  
+  .pulse-table th,
+  .pulse-table td {
+    padding: 15px 10px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pulse-card {
+    padding: 15px;
+  }
+  
+  .pulse-profile-img {
+    width: 60px;
+    height: 60px;
+    font-size: 18px;
+  }
+  
+  .pulse-status-badge {
+    padding: 8px 14px;
+    font-size: 11px;
+  }
+  
+  .pulse-stat-number {
+    font-size: 24px;
+  }
+  
+  .pulse-form-control {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+}
