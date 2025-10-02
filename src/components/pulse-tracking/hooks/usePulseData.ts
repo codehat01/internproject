@@ -28,6 +28,33 @@ export const usePulseUsers = () => {
 
   useEffect(() => {
     fetchUsers();
+
+    const attendanceChannel = supabase
+      .channel('attendance_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
+    const locationChannel = supabase
+      .channel('location_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_locations' }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
+    const leaveChannel = supabase
+      .channel('leave_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(attendanceChannel);
+      supabase.removeChannel(locationChannel);
+      supabase.removeChannel(leaveChannel);
+    };
   }, []);
 
   const fetchUsers = async () => {
@@ -130,6 +157,25 @@ export const usePulseUserDetail = (badgeNumber: string) => {
   useEffect(() => {
     if (badgeNumber) {
       fetchUserDetail();
+
+      const attendanceChannel = supabase
+        .channel(`user_attendance_${badgeNumber}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
+          fetchUserDetail();
+        })
+        .subscribe();
+
+      const locationChannel = supabase
+        .channel(`user_location_${badgeNumber}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_locations' }, () => {
+          fetchUserDetail();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(attendanceChannel);
+        supabase.removeChannel(locationChannel);
+      };
     }
   }, [badgeNumber]);
 

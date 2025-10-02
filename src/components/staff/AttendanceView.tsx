@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Camera, MapPin, Clock, Calendar } from 'lucide-react'
 import { getUserAttendance, punchInOut } from '../../lib/database'
 import { AttendanceViewProps, Notification, LocationCoords } from '../../types'
+import { cameraService } from '../../lib/cameraService'
+import { locationService } from '../../lib/locationService'
 
 interface AttendanceHistoryRecord {
   date: string;
@@ -19,32 +21,54 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
   const [notification, setNotification] = useState<Notification>({ message: '', type: 'info', show: false })
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceHistoryRecord[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [cameraPermission, setCameraPermission] = useState<boolean>(false)
+  const [locationPermission, setLocationPermission] = useState<boolean>(false)
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
 
-    // Get user location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          })
-        },
-        (error) => {
-          console.error('Error getting location:', error)
-        }
-      )
-    }
-
-    // Load attendance history
+    checkPermissions()
     loadAttendanceHistory()
 
-    return () => clearInterval(timer)
+    locationService.startTracking(user.id, (loc) => {
+      setLocation({
+        latitude: loc.latitude,
+        longitude: loc.longitude
+      })
+    })
+
+    return () => {
+      clearInterval(timer)
+      locationService.stopTracking()
+    }
   }, [user.id])
+
+  const checkPermissions = async () => {
+    try {
+      const camPermission = await cameraService.checkPermission()
+      setCameraPermission(camPermission)
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            })
+            setLocationPermission(true)
+          },
+          (error) => {
+            console.error('Error getting location:', error)
+            setLocationPermission(false)
+          }
+        )
+      }
+    } catch (error) {
+      console.error('Error checking permissions:', error)
+    }
+  }
 
   const loadAttendanceHistory = async (): Promise<void> => {
     try {
@@ -113,50 +137,76 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
 
   const handlePunch = async (): Promise<void> => {
     try {
-      // Check if location is available
       if (!location) {
         showNotification('Location access required for attendance!', 'error')
+        const hasPermission = await requestLocationPermission()
+        if (!hasPermission) return
+      }
+
+      if (!cameraPermission) {
+        const hasPermission = await cameraService.requestPermission()
+        if (!hasPermission) {
+          showNotification('Camera permission is required for attendance!', 'error')
+          return
+        }
+        setCameraPermission(true)
+      }
+
+      showNotification('Please position your face in the camera...', 'info')
+
+      const photoDataUrl = await cameraService.capturePhotoWithPreview()
+
+      if (!location) {
+        showNotification('Location not available. Please try again.', 'error')
         return
       }
 
-      // Simulate geofence check (in real app, this would check against police station coordinates)
-      const isInGeofence = true // Mock geofence check
+      const punchType = isPunchedIn ? 'out' : 'in'
 
-      if (!isInGeofence) {
-        showNotification('You must be inside the police station to punch in/out!', 'error')
-        return
-      }
+      await punchInOut(user.id, punchType, location.latitude, location.longitude, photoDataUrl)
 
-      // Simulate photo capture
-      const photoTaken = await simulatePhotoCapture()
-      
-      if (photoTaken) {
-        const punchType = isPunchedIn ? 'out' : 'in'
-        
-        // Save to database
-        await punchInOut(user.id, punchType, location.latitude, location.longitude)
-        
-        setIsPunchedIn(!isPunchedIn)
-        const action = !isPunchedIn ? 'Punched In' : 'Punched Out'
-        showNotification(`${action} successfully at ${currentTime.toLocaleTimeString()}!`, 'success')
-        
-        // Reload attendance history
-        loadAttendanceHistory()
-      }
-    } catch (error) {
+      await locationService.updateLocationInDatabase(location, true)
+
+      setIsPunchedIn(!isPunchedIn)
+      const action = !isPunchedIn ? 'Punched In' : 'Punched Out'
+      showNotification(`${action} successfully at ${currentTime.toLocaleTimeString()}!`, 'success')
+
+      loadAttendanceHistory()
+    } catch (error: any) {
       console.error('Error punching in/out:', error)
-      showNotification('Failed to record attendance. Please try again.', 'error')
+      if (error.message === 'User cancelled photo capture') {
+        showNotification('Photo capture cancelled', 'info')
+      } else {
+        showNotification('Failed to record attendance. Please try again.', 'error')
+      }
     }
   }
 
-  const simulatePhotoCapture = (): Promise<boolean> => {
+  const requestLocationPermission = async (): Promise<boolean> => {
     return new Promise((resolve) => {
-      // Simulate photo capture delay
-      setTimeout(() => {
-        resolve(true)
-      }, 1000)
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            })
+            setLocationPermission(true)
+            resolve(true)
+          },
+          (error) => {
+            console.error('Error getting location:', error)
+            showNotification('Please enable location services', 'error')
+            resolve(false)
+          }
+        )
+      } else {
+        showNotification('Geolocation is not supported by your browser', 'error')
+        resolve(false)
+      }
     })
   }
+
 
   const getStatusBadgeClass = (status: string): string => {
     switch (status) {

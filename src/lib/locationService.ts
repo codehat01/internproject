@@ -9,8 +9,9 @@ export interface LocationData {
 export class LocationService {
   private watchId: number | null = null;
   private userId: string | null = null;
-  private updateInterval: number = 30000;
+  private updateInterval: number = 300000;
   private lastUpdateTime: number = 0;
+  private intervalId: NodeJS.Timeout | null = null;
 
   setUserId(userId: string) {
     this.userId = userId;
@@ -47,13 +48,13 @@ export class LocationService {
     });
   }
 
-  async updateLocationInDatabase(locationData: LocationData): Promise<void> {
+  async updateLocationInDatabase(locationData: LocationData, force: boolean = false): Promise<void> {
     if (!this.userId) {
       throw new Error('User ID not set');
     }
 
     const now = Date.now();
-    if (now - this.lastUpdateTime < this.updateInterval) {
+    if (!force && now - this.lastUpdateTime < this.updateInterval) {
       return;
     }
 
@@ -85,36 +86,29 @@ export class LocationService {
     this.setUserId(userId);
     this.stopTracking();
 
-    this.watchId = navigator.geolocation.watchPosition(
-      async (position) => {
-        const locationData: LocationData = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        };
-
-        try {
-          await this.updateLocationInDatabase(locationData);
-          onLocationUpdate?.(locationData);
-        } catch (error) {
-          console.error('Error in location tracking:', error);
-        }
-      },
-      (error) => {
-        console.error('Location tracking error:', error);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 5000,
+    const updateLocation = async () => {
+      try {
+        const locationData = await this.getCurrentPosition();
+        await this.updateLocationInDatabase(locationData, true);
+        onLocationUpdate?.(locationData);
+      } catch (error) {
+        console.error('Error updating location:', error);
       }
-    );
+    };
+
+    updateLocation();
+
+    this.intervalId = setInterval(updateLocation, this.updateInterval);
   }
 
   stopTracking(): void {
     if (this.watchId !== null) {
       navigator.geolocation.clearWatch(this.watchId);
       this.watchId = null;
+    }
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
     }
   }
 

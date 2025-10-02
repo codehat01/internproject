@@ -1428,24 +1428,116 @@ body {
   .pulse-card {
     padding: 15px;
   }
-  
+
   .pulse-profile-img {
     width: 60px;
     height: 60px;
     font-size: 18px;
   }
-  
+
   .pulse-status-badge {
     padding: 8px 14px;
     font-size: 11px;
   }
-  
+
   .pulse-stat-number {
     font-size: 24px;
   }
-  
+
   .pulse-form-control {
     padding: 14px 16px;
     font-size: 15px;
+  }
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 0;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-header {
+  padding: 25px 30px;
+  border-bottom: 2px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(10, 31, 68, 0.02) 0%, rgba(212, 175, 55, 0.02) 100%);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--navy-blue);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 32px;
+  cursor: pointer;
+  color: var(--dark-gray);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  background: rgba(220, 53, 69, 0.1);
+  color: var(--red);
+  transform: rotate(90deg);
+}
+
+.modal-content form {
+  padding: 30px;
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 10px;
+  }
+
+  .modal-content {
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 20px;
+  }
+
+  .modal-header h3 {
+    font-size: 20px;
+  }
+
+  .modal-content form {
+    padding: 20px;
   }
 }
