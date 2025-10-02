@@ -8,6 +8,8 @@ export interface PulseUser extends Profile {
   currentLocation?: {
     latitude: number;
     longitude: number;
+    accuracy?: number;
+    timestamp?: string;
   };
 }
 
@@ -31,7 +33,7 @@ export const usePulseUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      
+
       // Get all profiles
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
@@ -60,7 +62,15 @@ export const usePulseUsers = () => {
 
       if (leaveError) throw leaveError;
 
-      // Process users with status
+      // Get latest locations for all users
+      const { data: locations, error: locationError } = await supabase
+        .from('user_locations')
+        .select('user_id, latitude, longitude, accuracy, timestamp')
+        .eq('is_active', true);
+
+      if (locationError) throw locationError;
+
+      // Process users with status and location
       const processedUsers: PulseUser[] = profiles?.map(profile => {
         // Check if on leave
         const onLeave = activeLeaves?.some(leave => leave.user_id === profile.id);
@@ -80,13 +90,22 @@ export const usePulseUsers = () => {
         if (hasPunchedIn && !hasPunchedOut) {
           status = 'On Duty';
         } else if (hasPunchedIn && hasPunchedOut) {
-          status = 'Absent'; // Completed shift
+          status = 'Absent';
         }
+
+        // Get user's current location
+        const userLocation = locations?.find(loc => loc.user_id === profile.id);
 
         return {
           ...profile,
           status,
-          lastSeen: userAttendance?.[userAttendance.length - 1]?.timestamp
+          lastSeen: userAttendance?.[userAttendance.length - 1]?.timestamp,
+          currentLocation: userLocation ? {
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
+            accuracy: userLocation.accuracy || undefined,
+            timestamp: userLocation.timestamp
+          } : undefined
         };
       }) || [];
 
@@ -123,14 +142,15 @@ export const usePulseUserDetail = (badgeNumber: string) => {
         .from('profiles')
         .select('*')
         .eq('badge_number', badgeNumber)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
+      if (!profile) throw new Error('User not found');
 
       // Get last 7 days attendance
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
+
       const { data: attendance, error: attendanceError } = await supabase
         .from('attendance')
         .select('*')
@@ -153,29 +173,40 @@ export const usePulseUserDetail = (badgeNumber: string) => {
 
       if (leaveError) throw leaveError;
 
+      // Get current location
+      const { data: locationData, error: locationError } = await supabase
+        .from('user_locations')
+        .select('latitude, longitude, accuracy, timestamp')
+        .eq('user_id', profile.id)
+        .eq('is_active', true)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (locationError) console.error('Location fetch error:', locationError);
+
       // Process attendance stats
       const stats: AttendanceStats[] = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
-        const dayAttendance = attendance?.filter(att => 
+
+        const dayAttendance = attendance?.filter(att =>
           att.timestamp.startsWith(dateStr)
         ) || [];
 
         const punchIn = dayAttendance.find(att => att.punch_type === 'in');
         const punchOut = dayAttendance.find(att => att.punch_type === 'out');
-        
+
         let hoursWorked = 0;
         let status: 'Present' | 'Late' | 'Absent' = 'Absent';
-        
+
         if (punchIn && punchOut) {
           const inTime = new Date(punchIn.timestamp);
           const outTime = new Date(punchOut.timestamp);
           hoursWorked = (outTime.getTime() - inTime.getTime()) / (1000 * 60 * 60);
-          
-          // Check if late (after 9:00 AM)
+
           const nineAM = new Date(inTime);
           nineAM.setHours(9, 0, 0, 0);
           status = inTime > nineAM ? 'Late' : 'Present';
@@ -196,14 +227,20 @@ export const usePulseUserDetail = (badgeNumber: string) => {
       const today = new Date().toISOString().split('T')[0];
       const todayStats = stats.find(s => s.date === today);
       let currentStatus: 'On Duty' | 'On Leave' | 'Absent' = 'Absent';
-      
+
       if (todayStats?.punchIn && !todayStats?.punchOut) {
         currentStatus = 'On Duty';
       }
 
       setUser({
         ...profile,
-        status: currentStatus
+        status: currentStatus,
+        currentLocation: locationData ? {
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          accuracy: locationData.accuracy || undefined,
+          timestamp: locationData.timestamp
+        } : undefined
       });
       setAttendanceStats(stats);
       setLeaveRequests(leaves || []);

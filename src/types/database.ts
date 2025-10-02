@@ -113,6 +113,38 @@ export interface Database {
           updated_at?: string;
         };
       };
+      user_locations: {
+        Row: {
+          id: string;
+          user_id: string;
+          latitude: number;
+          longitude: number;
+          accuracy: number | null;
+          timestamp: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          latitude: number;
+          longitude: number;
+          accuracy?: number | null;
+          timestamp?: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          latitude?: number;
+          longitude?: number;
+          accuracy?: number | null;
+          timestamp?: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

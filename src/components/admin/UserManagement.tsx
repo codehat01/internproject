@@ -1,30 +1,31 @@
-import React, { useState } from 'react'
-import { 
-  UserPlus, 
-  Edit, 
-  Trash2, 
-  Search, 
+import React, { useState, useEffect } from 'react'
+import {
+  UserPlus,
+  Edit,
+  Trash2,
+  Search,
   Filter,
   Shield,
   Phone,
   Mail,
   MapPin,
-  Calendar
+  Calendar,
+  RefreshCw
 } from 'lucide-react'
 import { UserManagementProps, Notification } from '../../types'
+import { supabase } from '../../lib/supabase'
 
 interface StaffMember {
-  id: number;
+  id: string;
   badge_number: string;
   full_name: string;
   rank: string;
   role: 'staff' | 'admin';
-  phone: string;
-  email: string;
-  department: string;
+  phone: string | null;
+  email: string | null;
+  department: string | null;
   is_active: boolean;
   created_at: string;
-  last_login: string;
 }
 
 interface NewUserForm {
@@ -35,6 +36,7 @@ interface NewUserForm {
   phone: string;
   email: string;
   department: string;
+  password: string;
 }
 
 const UserManagement: React.FC<UserManagementProps> = () => {
@@ -44,6 +46,8 @@ const UserManagement: React.FC<UserManagementProps> = () => {
   const [showEditModal, setShowEditModal] = useState<boolean>(false)
   const [selectedUser, setSelectedUser] = useState<StaffMember | null>(null)
   const [notification, setNotification] = useState<Notification>({ message: '', type: 'info', show: false })
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
 
   const [newUser, setNewUser] = useState<NewUserForm>({
     badge_number: '',
@@ -52,8 +56,31 @@ const UserManagement: React.FC<UserManagementProps> = () => {
     role: 'staff',
     phone: '',
     email: '',
-    department: 'General'
+    department: 'General',
+    password: ''
   })
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setStaffMembers(data || [])
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      showNotification('Error loading users', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const showNotification = (message: string, type: Notification['type']): void => {
     setNotification({ message, type, show: true })
@@ -62,61 +89,6 @@ const UserManagement: React.FC<UserManagementProps> = () => {
     }, 3000)
   }
 
-  const staffMembers: StaffMember[] = [
-    {
-      id: 1,
-      badge_number: 'STAFF001',
-      full_name: 'Officer K. Singh',
-      rank: 'Constable',
-      role: 'staff',
-      phone: '+91-9876543210',
-      email: 'k.singh@police.gov',
-      department: 'Traffic',
-      is_active: true,
-      created_at: '2024-01-15',
-      last_login: '2024-01-20 09:30'
-    },
-    {
-      id: 2,
-      badge_number: 'STAFF002',
-      full_name: 'Officer A. Khan',
-      rank: 'SI',
-      role: 'staff',
-      phone: '+91-9876543211',
-      email: 'a.khan@police.gov',
-      department: 'Investigation',
-      is_active: true,
-      created_at: '2024-01-10',
-      last_login: '2024-01-20 08:45'
-    },
-    {
-      id: 3,
-      badge_number: 'STAFF003',
-      full_name: 'Officer R. Verma',
-      rank: 'Constable',
-      role: 'staff',
-      phone: '+91-9876543212',
-      email: 'r.verma@police.gov',
-      department: 'Patrol',
-      is_active: false,
-      created_at: '2024-01-05',
-      last_login: '2024-01-18 17:20'
-    },
-    {
-      id: 4,
-      badge_number: 'ADMIN001',
-      full_name: 'Inspector J. Sharma',
-      rank: 'Inspector',
-      role: 'admin',
-      phone: '+91-9876543213',
-      email: 'j.sharma@police.gov',
-      department: 'Administration',
-      is_active: true,
-      created_at: '2024-01-01',
-      last_login: '2024-01-20 10:15'
-    }
-  ]
-
   const filteredStaff = staffMembers.filter(staff => {
     const matchesSearch = staff.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          staff.badge_number.toLowerCase().includes(searchTerm.toLowerCase())
@@ -124,36 +96,66 @@ const UserManagement: React.FC<UserManagementProps> = () => {
     return matchesSearch && matchesRole
   })
 
-  const handleAddUser = (e: React.FormEvent<HTMLFormElement>): void => {
+  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
-    
-    // Validate required fields
-    if (!newUser.badge_number || !newUser.full_name || !newUser.email) {
+
+    if (!newUser.badge_number || !newUser.full_name || !newUser.email || !newUser.password) {
       showNotification('Please fill in all required fields!', 'error')
       return
     }
 
-    // Check if badge number already exists
     const badgeExists = staffMembers.some(staff => staff.badge_number === newUser.badge_number)
     if (badgeExists) {
       showNotification('Badge number already exists!', 'error')
       return
     }
 
-    // Here you would add to Supabase
-    showNotification(`User ${newUser.full_name} added successfully!`, 'success')
-    
-    // Reset form and close modal
-    setNewUser({
-      badge_number: '',
-      full_name: '',
-      rank: 'Constable',
-      role: 'staff',
-      phone: '',
-      email: '',
-      department: 'General'
-    })
-    setShowAddModal(false)
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
+        options: {
+          data: {
+            badge_number: newUser.badge_number,
+            full_name: newUser.full_name,
+            rank: newUser.rank,
+            role: newUser.role
+          }
+        }
+      })
+
+      if (authError) throw authError
+
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            phone: newUser.phone || null,
+            department: newUser.department || null
+          })
+          .eq('id', authData.user.id)
+
+        if (profileError) throw profileError
+      }
+
+      showNotification(`User ${newUser.full_name} added successfully!`, 'success')
+
+      setNewUser({
+        badge_number: '',
+        full_name: '',
+        rank: 'Constable',
+        role: 'staff',
+        phone: '',
+        email: '',
+        department: 'General',
+        password: ''
+      })
+      setShowAddModal(false)
+      fetchUsers()
+    } catch (error: any) {
+      console.error('Error adding user:', error)
+      showNotification(error.message || 'Error adding user', 'error')
+    }
   }
 
   const handleEditUser = (user: StaffMember): void => {
@@ -161,17 +163,41 @@ const UserManagement: React.FC<UserManagementProps> = () => {
     setShowEditModal(true)
   }
 
-  const handleDeleteUser = (user: StaffMember): void => {
-    if (window.confirm(`Are you sure you want to delete ${user.full_name}?`)) {
-      showNotification(`User ${user.full_name} deleted successfully!`, 'success')
-      // Here you would delete from Supabase
+  const handleDeleteUser = async (user: StaffMember): Promise<void> => {
+    if (window.confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', user.id)
+
+        if (error) throw error
+
+        showNotification(`User ${user.full_name} deleted successfully!`, 'success')
+        fetchUsers()
+      } catch (error: any) {
+        console.error('Error deleting user:', error)
+        showNotification('Error deleting user', 'error')
+      }
     }
   }
 
-  const handleToggleActive = (user: StaffMember): void => {
-    const action = user.is_active ? 'deactivated' : 'activated'
-    showNotification(`User ${user.full_name} ${action} successfully!`, 'info')
-    // Here you would update in Supabase
+  const handleToggleActive = async (user: StaffMember): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: !user.is_active })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      const action = user.is_active ? 'deactivated' : 'activated'
+      showNotification(`User ${user.full_name} ${action} successfully!`, 'info')
+      fetchUsers()
+    } catch (error: any) {
+      console.error('Error updating user status:', error)
+      showNotification('Error updating user status', 'error')
+    }
   }
 
   const getRankBadgeColor = (rank: string): string => {
@@ -191,11 +217,29 @@ const UserManagement: React.FC<UserManagementProps> = () => {
     return role === 'admin' ? 'var(--red)' : 'var(--green)'
   }
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+        <div style={{ color: 'var(--navy-blue)', fontSize: '18px' }}>Loading users...</div>
+      </div>
+    )
+  }
+
   return (
     <div>
-      <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px', fontSize: '28px', fontWeight: '700' }}>
-        User Management
-      </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+        <h2 style={{ color: 'var(--navy-blue)', fontSize: '28px', fontWeight: '700', margin: 0 }}>
+          User Management
+        </h2>
+        <button
+          onClick={fetchUsers}
+          className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+        >
+          <RefreshCw size={18} />
+          Refresh
+        </button>
+      </div>
 
       {/* Controls */}
       <div className="card" style={{ marginBottom: '30px' }}>
@@ -257,7 +301,7 @@ const UserManagement: React.FC<UserManagementProps> = () => {
                 <th>Department</th>
                 <th>Contact</th>
                 <th>Status</th>
-                <th>Last Login</th>
+                <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -340,8 +384,7 @@ const UserManagement: React.FC<UserManagementProps> = () => {
                   </td>
                   <td>
                     <small style={{ color: 'var(--dark-gray)' }}>
-                      {new Date(staff.last_login).toLocaleDateString()}<br />
-                      {new Date(staff.last_login).toLocaleTimeString()}
+                      {new Date(staff.created_at).toLocaleDateString()}
                     </small>
                   </td>
                   <td>
@@ -439,16 +482,6 @@ const UserManagement: React.FC<UserManagementProps> = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                 <div className="form-group">
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Phone</label>
-                  <input
-                    type="tel"
-                    className="form-control"
-                    placeholder="+91-9876543210"
-                    value={newUser.phone}
-                    onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Email *</label>
                   <input
                     type="email"
@@ -459,21 +492,45 @@ const UserManagement: React.FC<UserManagementProps> = () => {
                     required
                   />
                 </div>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Password *</label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    placeholder="Minimum 6 characters"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                    required
+                    minLength={6}
+                  />
+                </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Department</label>
-                <select
-                  className="form-control"
-                  value={newUser.department}
-                  onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                >
-                  <option value="General">General</option>
-                  <option value="Traffic">Traffic</option>
-                  <option value="Investigation">Investigation</option>
-                  <option value="Patrol">Patrol</option>
-                  <option value="Administration">Administration</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Phone</label>
+                  <input
+                    type="tel"
+                    className="form-control"
+                    placeholder="+91-9876543210"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Department</label>
+                  <select
+                    className="form-control"
+                    value={newUser.department}
+                    onChange={(e) => setNewUser({...newUser, department: e.target.value})}
+                  >
+                    <option value="General">General</option>
+                    <option value="Traffic">Traffic</option>
+                    <option value="Investigation">Investigation</option>
+                    <option value="Patrol">Patrol</option>
+                    <option value="Administration">Administration</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>

@@ -138,6 +138,17 @@ export interface LocationCoords {
   longitude: number;
 }
 
+export interface UserLocation {
+  id: string;
+  user_id: string;
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  timestamp: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 // Chart Data Types
 export interface ChartData {
   label: string;

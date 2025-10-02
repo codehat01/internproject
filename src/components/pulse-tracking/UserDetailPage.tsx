@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Clock, Activity, CircleCheck as CheckCircle, Circle as XCircle, CircleAlert as AlertCircle, Shield } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { usePulseUserDetail } from './hooks/usePulseData';
+import LocationMap from './LocationMap';
 
 interface UserDetailPageProps {
   badgeNumber: string;
@@ -524,7 +525,7 @@ const UserDetailPage: React.FC<UserDetailPageProps> = ({ badgeNumber, onBack }) 
       </motion.div>
 
       {/* Live Location */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
@@ -532,46 +533,118 @@ const UserDetailPage: React.FC<UserDetailPageProps> = ({ badgeNumber, onBack }) 
       >
         <h3 className="card-title">
           <MapPin size={20} />
-          Live Location
+          Live Location Tracking
         </h3>
-        
-        <div style={{
-          height: '300px',
-          borderRadius: '15px',
-          overflow: 'hidden',
-          border: '2px solid #e9ecef',
-          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <MapPin size={48} style={{ color: 'var(--dark-gray)', marginBottom: '15px' }} />
-            <p style={{ color: 'var(--dark-gray)', fontSize: '16px', fontWeight: '600' }}>
-              Map Integration Available
-            </p>
-            <p style={{ color: 'var(--dark-gray)', fontSize: '14px' }}>
-              Location: Police Headquarters
-            </p>
-          </div>
-        </div>
-        
-        <div style={{
-          marginTop: '20px',
-          padding: '20px',
-          background: 'rgba(10, 31, 68, 0.05)',
-          borderRadius: '12px'
-        }}>
-          <p style={{ 
-            fontSize: '14px', 
-            color: 'var(--dark-gray)',
-            margin: 0,
-            lineHeight: '1.5'
+
+        {user.currentLocation ? (
+          <>
+            <LocationMap
+              latitude={user.currentLocation.latitude}
+              longitude={user.currentLocation.longitude}
+              accuracy={user.currentLocation.accuracy}
+              userName={user.full_name}
+              timestamp={user.currentLocation.timestamp}
+            />
+
+            <div style={{
+              marginTop: '20px',
+              padding: '20px',
+              background: 'rgba(10, 31, 68, 0.05)',
+              borderRadius: '12px',
+              display: 'grid',
+              gridTemplateColumns: window.innerWidth < 768 ? '1fr' : 'repeat(2, 1fr)',
+              gap: '15px'
+            }}>
+              <div>
+                <p style={{
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  color: 'var(--dark-gray)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '5px'
+                }}>
+                  Coordinates
+                </p>
+                <p style={{
+                  fontSize: '14px',
+                  color: 'var(--navy-blue)',
+                  fontWeight: '600',
+                  margin: 0
+                }}>
+                  {user.currentLocation.latitude.toFixed(6)}, {user.currentLocation.longitude.toFixed(6)}
+                </p>
+              </div>
+
+              {user.currentLocation.accuracy && (
+                <div>
+                  <p style={{
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    color: 'var(--dark-gray)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    marginBottom: '5px'
+                  }}>
+                    Accuracy
+                  </p>
+                  <p style={{
+                    fontSize: '14px',
+                    color: 'var(--navy-blue)',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    ±{Math.round(user.currentLocation.accuracy)} meters
+                  </p>
+                </div>
+              )}
+
+              {user.currentLocation.timestamp && (
+                <div style={{ gridColumn: window.innerWidth < 768 ? '1' : 'span 2' }}>
+                  <p style={{
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    color: 'var(--dark-gray)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    marginBottom: '5px'
+                  }}>
+                    Last Updated
+                  </p>
+                  <p style={{
+                    fontSize: '14px',
+                    color: 'var(--navy-blue)',
+                    fontWeight: '600',
+                    margin: 0
+                  }}>
+                    {new Date(user.currentLocation.timestamp).toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div style={{
+            height: '300px',
+            borderRadius: '15px',
+            overflow: 'hidden',
+            border: '2px solid #e9ecef',
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <strong>Note:</strong> Location tracking is simulated for demo purposes. 
-            In a real implementation, this would show the officer's actual GPS coordinates with live map integration.
-          </p>
-        </div>
+            <div style={{ textAlign: 'center' }}>
+              <MapPin size={48} style={{ color: 'var(--dark-gray)', marginBottom: '15px' }} />
+              <p style={{ color: 'var(--dark-gray)', fontSize: '16px', fontWeight: '600' }}>
+                No Location Data Available
+              </p>
+              <p style={{ color: 'var(--dark-gray)', fontSize: '14px' }}>
+                This officer has not shared their location yet
+              </p>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       <style>{`
