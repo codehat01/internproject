@@ -1,17 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  UserPlus,
-  Edit,
-  Trash2,
-  Search,
-  Filter,
-  Shield,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
-  RefreshCw
-} from 'lucide-react'
+import { UserPlus, CreditCard as Edit, Trash2, Search, ListFilter as Filter, Shield, Phone, Mail, MapPin, Calendar, RefreshCw } from 'lucide-react'
 import { UserManagementProps, Notification } from '../../types'
 import { supabase } from '../../lib/supabase'
 
