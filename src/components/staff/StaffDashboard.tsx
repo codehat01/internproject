@@ -169,7 +169,6 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
           <h3 className="card-title">Quick Actions</h3>
           <div className="quick-actions-buttons">
             <button 
-              className="btn btn-golden" 
               className="btn btn-golden action-btn"
               onClick={() => showNotification('Redirecting to leave request form...', 'info')}
             >
