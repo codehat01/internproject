@@ -176,7 +176,6 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
               Submit Leave Request
             </button>
             <button 
-              className="btn btn-primary" 
               className="btn btn-primary action-btn"
               onClick={() => showNotification('Opening attendance history...', 'info')}
             >
