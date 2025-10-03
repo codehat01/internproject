@@ -248,7 +248,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </form>
 
         <div className="login-footer">
-          GOVERNMENT OF INDIA • © 2024
+          GOVERNMENT OF INDIA • © 2025
         </div>
 
         <div className={`notification ${notification.type} ${notification.show ? 'show' : ''}`}>

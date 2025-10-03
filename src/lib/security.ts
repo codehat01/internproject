@@ -219,7 +219,7 @@ export const rateLimiter = new RateLimiter();
  */
 export class SecureStorage {
   private static readonly STORAGE_KEY = 'police_attendance_session';
-  private static readonly ENCRYPTION_KEY = 'secure_session_key_2024';
+  private static readonly ENCRYPTION_KEY = 'secure_session_key_2025';
 
   static async setItem(key: string, value: any): Promise<void> {
     try {
