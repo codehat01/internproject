@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Activity, Video as LucideIcon } from 'lucide-react'
 import ashokPillar from '../assets/ashok-pillar-symbol-icon-blue.webp'
 
-// Import organized components
 import AdminDashboard from './admin/AdminDashboard'
 import StaffDashboard from './staff/StaffDashboard'
 import AttendanceView from './staff/AttendanceView'
@@ -12,6 +11,9 @@ import ScheduleView from './staff/ScheduleView'
 import EmergencyView from './staff/EmergencyView'
 import PulseTrackingMain from './pulse-tracking/PulseTrackingMain'
 import { DashboardProps, Notification, User as UserType } from '../types'
+import { useAttendance } from '../hooks/useAttendance'
+import { useAllAttendance } from '../hooks/useAllAttendance'
+import { useLeaveRequests } from '../hooks/useLeaveRequests'
 
 interface MenuItem {
   id: string;
@@ -217,215 +219,630 @@ interface PlaceholderViewProps {
   user: UserType;
 }
 
-const AttendanceHistoryView: React.FC<PlaceholderViewProps> = ({ user }) => (
-  <div>
-    <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px' }}>Attendance History</h2>
-    <div className="card">
-      <h3 className="card-title">Detailed Attendance History</h3>
-      <div className="table-container">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Time In</th>
-              <th>Time Out</th>
-              <th>Hours Worked</th>
-              <th>Status</th>
-              <th>Location</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>2024-09-28</td>
-              <td>09:00 AM</td>
-              <td>05:30 PM</td>
-              <td>8.5</td>
-              <td><span className="status-badge status-present">Present</span></td>
-              <td>HQ Building</td>
-            </tr>
-            <tr>
-              <td>2024-09-27</td>
-              <td>09:15 AM</td>
-              <td>05:30 PM</td>
-              <td>8.25</td>
-              <td><span className="status-badge status-late">Late</span></td>
-              <td>HQ Building</td>
-            </tr>
-            <tr>
-              <td>2024-09-26</td>
-              <td>--</td>
-              <td>--</td>
-              <td>0</td>
-              <td><span className="status-badge status-absent">Absent</span></td>
-              <td>--</td>
-            </tr>
-          </tbody>
-        </table>
+const AttendanceHistoryView: React.FC<PlaceholderViewProps> = ({ user }) => {
+  const { attendance, loading, error } = useAttendance(user.id);
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: { [key: string]: string } = {
+      present: 'status-present',
+      late: 'status-late',
+      absent: 'status-absent'
+    };
+    return statusMap[status] || 'status-badge';
+  };
+
+  return (
+    <div>
+      <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px' }}>Attendance History</h2>
+      <div className="card">
+        <h3 className="card-title">Detailed Attendance History</h3>
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <div className="spinner" />
+            <p>Loading attendance history...</p>
+          </div>
+        )}
+        {error && (
+          <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>
+            Error: {error}
+          </div>
+        )}
+        {!loading && !error && attendance.length === 0 && (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+            No attendance records found
+          </div>
+        )}
+        {!loading && !error && attendance.length > 0 && (
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time In</th>
+                  <th>Time Out</th>
+                  <th>Hours Worked</th>
+                  <th>Status</th>
+                  <th>Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attendance.map((record) => (
+                  <tr key={record.id}>
+                    <td>{formatDate(record.timestamp)}</td>
+                    <td>{record.punch_type === 'in' ? formatTime(record.timestamp) : '--'}</td>
+                    <td>{record.punch_type === 'out' ? formatTime(record.timestamp) : '--'}</td>
+                    <td>{record.hoursWorked ? record.hoursWorked.toFixed(2) : '0'}</td>
+                    <td>
+                      <span className={`status-badge ${getStatusBadge(record.displayStatus || 'present')}`}>
+                        {record.displayStatus ? record.displayStatus.charAt(0).toUpperCase() + record.displayStatus.slice(1) : 'Present'}
+                      </span>
+                    </td>
+                    <td>{record.latitude && record.longitude ? `${record.latitude.toFixed(4)}, ${record.longitude.toFixed(4)}` : '--'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
-  </div>
-)
+  );
+}
 
-const AttendanceLogsView: React.FC = () => (
-  <div>
-    <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px' }}>Attendance Logs</h2>
-    <div className="card">
-      <h3 className="card-title">All Staff Attendance Logs</h3>
-      <div className="table-container">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Officer Name</th>
-              <th>Punch In Time</th>
-              <th>Punch Out Time</th>
-              <th>Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Officer K. Singh</td>
-              <td>08:58 AM</td>
-              <td>05:02 PM</td>
-              <td>2024-09-28</td>
-              <td><span className="status-badge status-present">Present</span></td>
-            </tr>
-            <tr>
-              <td>Officer A. Khan</td>
-              <td>09:05 AM</td>
-              <td>05:00 PM</td>
-              <td>2024-09-28</td>
-              <td><span className="status-badge status-present">Present</span></td>
-            </tr>
-            <tr>
-              <td>Officer R. Verma</td>
-              <td>09:15 AM</td>
-              <td>--</td>
-              <td>2024-09-28</td>
-              <td><span className="status-badge status-present">Present</span></td>
-            </tr>
-          </tbody>
-        </table>
+const AttendanceLogsView: React.FC = () => {
+  const [page, setPage] = useState(1);
+  const [dateFilter, setDateFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const { attendance, loading, error, totalPages } = useAllAttendance({
+    page,
+    pageSize: 20,
+    dateFilter,
+    statusFilter
+  });
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  const getStatusBadge = (punchType: string) => {
+    return punchType === 'in' ? 'status-present' : 'status-badge';
+  };
+
+  return (
+    <div>
+      <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px' }}>Attendance Logs</h2>
+
+      <div style={{ marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Filter by Date:</label>
+          <input
+            type="date"
+            className="form-control"
+            value={dateFilter}
+            onChange={(e) => {
+              setDateFilter(e.target.value);
+              setPage(1);
+            }}
+            style={{ width: '200px' }}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Filter by Status:</label>
+          <select
+            className="form-control"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            style={{ width: '150px' }}
+          >
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        {(dateFilter || statusFilter !== 'all') && (
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setDateFilter('');
+              setStatusFilter('all');
+              setPage(1);
+            }}
+            style={{ alignSelf: 'flex-end' }}
+          >
+            Clear Filters
+          </button>
+        )}
+      </div>
+
+      <div className="card">
+        <h3 className="card-title">All Staff Attendance Logs</h3>
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <div className="spinner" />
+            <p>Loading attendance logs...</p>
+          </div>
+        )}
+        {error && (
+          <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>
+            Error: {error}
+          </div>
+        )}
+        {!loading && !error && attendance.length === 0 && (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+            No attendance logs found
+          </div>
+        )}
+        {!loading && !error && attendance.length > 0 && (
+          <>
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Officer Name</th>
+                    <th>Badge Number</th>
+                    <th>Department</th>
+                    <th>Punch Type</th>
+                    <th>Time</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendance.map((record) => (
+                    <tr key={record.id}>
+                      <td>{record.profiles?.full_name || 'Unknown'}</td>
+                      <td>{record.profiles?.badge_number || '--'}</td>
+                      <td>{record.profiles?.department || '--'}</td>
+                      <td>
+                        <span style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          backgroundColor: record.punch_type === 'in' ? '#e8f5e9' : '#fff3e0',
+                          color: record.punch_type === 'in' ? '#2e7d32' : '#e65100',
+                          fontWeight: '600'
+                        }}>
+                          {record.punch_type.toUpperCase()}
+                        </span>
+                      </td>
+                      <td>{formatTime(record.timestamp)}</td>
+                      <td>{formatDate(record.timestamp)}</td>
+                      <td>
+                        <span className={`status-badge ${getStatusBadge(record.punch_type)}`}>
+                          {record.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '20px', padding: '10px' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </button>
+                <span style={{ padding: '8px 16px', alignSelf: 'center' }}>
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
-  </div>
-)
+  );
+}
 
-const LeaveManagementView: React.FC = () => (
-  <div>
-    <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px' }}>Leave Management</h2>
-    <div className="card">
-      <h3 className="card-title">Manage Leave Requests</h3>
-      <div className="table-container">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Officer</th>
-              <th>Dates</th>
-              <th>Reason</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div className="profile-img">KS</div>
-                  <div>Officer K. Singh</div>
-                </div>
-              </td>
-              <td>July 15 - July 17</td>
-              <td>Family event</td>
-              <td><span className="status-badge status-present">Approved</span></td>
-              <td>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn btn-success">Approve</button>
-                  <button className="btn btn-danger">Reject</button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div className="profile-img">AK</div>
-                  <div>Officer A. Khan</div>
-                </div>
-              </td>
-              <td>July 20 - July 22</td>
-              <td>Medical Appointment</td>
-              <td><span className="status-badge status-late">Pending</span></td>
-              <td>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn btn-success">Approve</button>
-                  <button className="btn btn-danger">Reject</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+const LeaveManagementView: React.FC = () => {
+  const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const { leaveRequests, loading, error, approveLeaveRequest, rejectLeaveRequest } = useLeaveRequests({ isAdmin: true });
+
+  const handleApprove = async (requestId: string) => {
+    const result = await approveLeaveRequest(requestId, 'admin-user-id');
+    if (result.success) {
+      alert('Leave request approved successfully');
+    } else {
+      alert(`Failed to approve: ${result.error}`);
+    }
+  };
+
+  const handleReject = async (requestId: string) => {
+    if (!rejectReason.trim()) {
+      alert('Please provide a reason for rejection');
+      return;
+    }
+    const result = await rejectLeaveRequest(requestId, 'admin-user-id', rejectReason);
+    if (result.success) {
+      alert('Leave request rejected');
+      setSelectedRequest(null);
+      setRejectReason('');
+    } else {
+      alert(`Failed to reject: ${result.error}`);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: { [key: string]: string } = {
+      approved: 'status-present',
+      pending: 'status-late',
+      rejected: 'status-absent'
+    };
+    return statusMap[status] || 'status-badge';
+  };
+
+  return (
+    <div>
+      <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px' }}>Leave Management</h2>
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <div className="spinner" />
+          <p>Loading leave requests...</p>
+        </div>
+      )}
+      {error && (
+        <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>
+          Error: {error}
+        </div>
+      )}
+      {!loading && !error && (
+        <div className="card">
+          <h3 className="card-title">Manage Leave Requests</h3>
+          {leaveRequests.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+              No leave requests found
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Officer</th>
+                    <th>Badge Number</th>
+                    <th>Department</th>
+                    <th>Dates</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaveRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div className="profile-img">
+                            {request.profiles?.full_name?.split(' ').map(n => n[0]).join('') || '??'}
+                          </div>
+                          <div>{request.profiles?.full_name || 'Unknown'}</div>
+                        </div>
+                      </td>
+                      <td>{request.profiles?.badge_number || '--'}</td>
+                      <td>{request.profiles?.department || '--'}</td>
+                      <td>
+                        {formatDate(request.start_date)} - {formatDate(request.end_date)}
+                      </td>
+                      <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {request.reason}
+                      </td>
+                      <td>
+                        <span className={`status-badge ${getStatusBadge(request.status)}`}>
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </span>
+                      </td>
+                      <td>
+                        {request.status === 'pending' ? (
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                              className="btn btn-success"
+                              onClick={() => handleApprove(request.id)}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              className="btn btn-danger"
+                              onClick={() => setSelectedRequest(request.id)}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#666', fontStyle: 'italic' }}>
+                            {request.status === 'approved' ? 'Approved' : 'Rejected'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedRequest && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '30px',
+            borderRadius: '8px',
+            maxWidth: '500px',
+            width: '90%'
+          }}>
+            <h3 style={{ marginBottom: '20px' }}>Reject Leave Request</h3>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+                Reason for rejection:
+              </label>
+              <textarea
+                className="form-control"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={4}
+                placeholder="Enter reason for rejection..."
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setSelectedRequest(null);
+                  setRejectReason('');
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => handleReject(selectedRequest)}
+              >
+                Confirm Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ReportsView: React.FC<PlaceholderViewProps> = ({ user }) => {
+  const isAdmin = user.role === 'admin';
+  const { attendance: allAttendance, loading: attendanceLoading } = useAllAttendance({ pageSize: 100 });
+  const { attendance: userAttendance } = useAttendance(user.id);
+  const { leaveRequests, loading: leaveLoading } = useLeaveRequests({
+    userId: isAdmin ? undefined : user.id,
+    isAdmin
+  });
+
+  const attendanceData = isAdmin ? allAttendance : userAttendance;
+
+  const exportAsCSV = () => {
+    const headers = ['Officer Name', 'Badge Number', 'Punch Type', 'Date', 'Time', 'Status'];
+    const rows = attendanceData.map(record => [
+      record.profiles?.full_name || 'Unknown',
+      record.profiles?.badge_number || '--',
+      record.punch_type.toUpperCase(),
+      new Date(record.timestamp).toLocaleDateString(),
+      new Date(record.timestamp).toLocaleTimeString(),
+      record.status
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_report_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportAsPDF = () => {
+    alert('PDF export functionality coming soon');
+  };
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  const loading = attendanceLoading || leaveLoading;
+
+  return (
+    <div>
+      <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px', textAlign: 'center', fontSize: '32px' }}>
+        REPORTS AND EXPORT
+      </h2>
+
+      <div style={{ display: 'flex', gap: '15px', marginBottom: '30px' }}>
+        <button
+          className="btn btn-primary"
+          onClick={exportAsCSV}
+          disabled={loading || attendanceData.length === 0}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+        >
+          <span>EXPORT AS CSV</span>
+        </button>
+        <button
+          className="btn"
+          onClick={exportAsPDF}
+          disabled={loading || attendanceData.length === 0}
+          style={{ backgroundColor: 'var(--navy-blue)', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}
+        >
+          <span>EXPORT AS PDF</span>
+        </button>
       </div>
-    </div>
-  </div>
-)
 
-const ReportsView: React.FC<PlaceholderViewProps> = ({ user }) => (
-  <div>
-    <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px', textAlign: 'center', fontSize: '32px' }}>REPORTS AND EXPORT</h2>
-    
-    <div style={{ display: 'flex', gap: '15px', marginBottom: '30px' }}>
-      <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span>EXPORT AS CSV</span>
-      </button>
-      <button className="btn btn-warning" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span>EXPORT AS EXCEL</span>
-      </button>
-      <button className="btn" style={{ backgroundColor: 'var(--navy-blue)', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span>EXPORT AS PDF</span>
-      </button>
-    </div>
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <div className="spinner" />
+          <p>Loading report data...</p>
+        </div>
+      )}
 
-    <div className="card">
-      <h3 className="card-title">ATTENDANCE LOGS</h3>
-      <div className="table-container">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Officer Name</th>
-              <th>Punch In Time</th>
-              <th>Punch Out Time</th>
-              <th>Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Officer K. Singh</td>
-              <td>08:58 AM</td>
-              <td>05:02 PM</td>
-              <td>2024-09-28</td>
-              <td><span className="status-badge status-present">Present</span></td>
-            </tr>
-            <tr>
-              <td>Officer A. Khan</td>
-              <td>09:05 AM</td>
-              <td>05:00 PM</td>
-              <td>2024-09-28</td>
-              <td><span className="status-badge status-present">Present</span></td>
-            </tr>
-            <tr>
-              <td>Officer R. Verma</td>
-              <td>09:15 AM</td>
-              <td>--</td>
-              <td>2024-09-28</td>
-              <td><span className="status-badge status-present">Present</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      {!loading && (
+        <>
+          <div className="card" style={{ marginBottom: '20px' }}>
+            <h3 className="card-title">ATTENDANCE SUMMARY</h3>
+            <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: 'var(--navy-blue)' }}>
+                  {attendanceData.length}
+                </div>
+                <div style={{ color: '#666' }}>Total Records</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#4caf50' }}>
+                  {attendanceData.filter(r => r.punch_type === 'in').length}
+                </div>
+                <div style={{ color: '#666' }}>Check-ins</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#ff9800' }}>
+                  {attendanceData.filter(r => r.punch_type === 'out').length}
+                </div>
+                <div style={{ color: '#666' }}>Check-outs</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#2196f3' }}>
+                  {leaveRequests.length}
+                </div>
+                <div style={{ color: '#666' }}>Leave Requests</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3 className="card-title">ATTENDANCE LOGS</h3>
+            {attendanceData.length === 0 ? (
+              <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                No attendance records available
+              </div>
+            ) : (
+              <div className="table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Officer Name</th>
+                      <th>Badge Number</th>
+                      <th>Punch Type</th>
+                      <th>Date</th>
+                      <th>Time</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceData.slice(0, 50).map((record) => (
+                      <tr key={record.id}>
+                        <td>{record.profiles?.full_name || user.full_name}</td>
+                        <td>{record.profiles?.badge_number || user.badge_number}</td>
+                        <td>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: record.punch_type === 'in' ? '#e8f5e9' : '#fff3e0',
+                            color: record.punch_type === 'in' ? '#2e7d32' : '#e65100',
+                            fontWeight: '600'
+                          }}>
+                            {record.punch_type.toUpperCase()}
+                          </span>
+                        </td>
+                        <td>{formatDate(record.timestamp)}</td>
+                        <td>{formatTime(record.timestamp)}</td>
+                        <td>
+                          <span className="status-badge status-present">
+                            {record.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
-  </div>
-)
+  );
+}
 
 const SettingsView: React.FC<PlaceholderViewProps> = ({ user }) => (
   <div>
