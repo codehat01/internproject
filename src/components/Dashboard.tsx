@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Shield, User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Activity, Video as LucideIcon } from 'lucide-react'
+import { User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Activity, Video as LucideIcon } from 'lucide-react'
+import ashokPillar from '../assets/ashok-pillar-symbol-icon-blue.webp'
 
 // Import organized components
 import AdminDashboard from './admin/AdminDashboard'
@@ -15,7 +16,7 @@ import { DashboardProps, Notification, User as UserType } from '../types'
 interface MenuItem {
   id: string;
   label: string;
-  icon: LucideIcon;
+  icon: React.ComponentType<{ size?: number }>;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
@@ -128,7 +129,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             ☰
           </button>
           <div className="header-emblem">
-            <Shield size={24} />
+            <img 
+              src={ashokPillar} 
+              alt="Police Emblem" 
+              style={{ width: '64px', height: '64px' }}
+            />
           </div>
           <div className="header-title-container">
             <span className="header-title">POLICE ATTENDANCE</span>
@@ -157,7 +162,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         <nav className={`sidebar ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
           <div className="sidebar-header">
             <div className="sidebar-logo">
-              <Shield size={32} />
+              <img 
+                src={ashokPillar} 
+                alt="Police Emblem" 
+                style={{ width: '128px', height: '128px' }}
+              />
             </div>
             <button 
               className="sidebar-close"

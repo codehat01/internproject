@@ -24,7 +24,7 @@ const Landing: React.FC<Props> = ({ onEnter }) => {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 2000,
-        backgroundImage: `linear-gradient(rgba(10, 31, 68, 0.7), rgba(10, 31, 68, 0.8)), url('https://images.pexels.com/photos/8728380/pexels-photo-8728380.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop')`,
+        backgroundImage: `linear-gradient(rgba(10, 31, 68, 0.7), rgba(10, 31, 68, 0.8)), url('https://pragativadi.com/wp-content/uploads/2025/07/Odisha-News.jpg')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -71,7 +71,7 @@ const Landing: React.FC<Props> = ({ onEnter }) => {
 
       {/* Footer */}
       <div className="landing-footer">
-        © 2024 Government of India, Ministry of Home Affairs - All Rights Reserved
+        © 2025 Government of India, Ministry of Home Affairs - All Rights Reserved
       </div>
     </div>
   )
