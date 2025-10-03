@@ -145,6 +145,41 @@ export interface Database {
           created_at?: string;
         };
       };
+      shifts: {
+        Row: {
+          id: string;
+          station_id: string;
+          shift_name: string;
+          shift_start: string;
+          shift_end: string;
+          assigned_users: string[];
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          station_id: string;
+          shift_name: string;
+          shift_start: string;
+          shift_end: string;
+          assigned_users?: string[];
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          station_id?: string;
+          shift_name?: string;
+          shift_start?: string;
+          shift_end?: string;
+          assigned_users?: string[];
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

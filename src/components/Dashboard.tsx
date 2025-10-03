@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Activity, Video as LucideIcon } from 'lucide-react'
+import { User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Activity, Video as LucideIcon, MapPin, Clock } from 'lucide-react'
 import ashokPillar from '../assets/ashok-pillar-symbol-icon-blue.webp'
 
 import AdminDashboard from './admin/AdminDashboard'
@@ -10,6 +10,10 @@ import UserManagement from './admin/UserManagement'
 import ScheduleView from './staff/ScheduleView'
 import EmergencyView from './staff/EmergencyView'
 import PulseTrackingMain from './pulse-tracking/PulseTrackingMain'
+import LiveLocationView from './admin/LiveLocationView'
+import ShiftManagementView from './admin/ShiftManagementView'
+import LeaveCalendarView from './admin/LeaveCalendarView'
+import EnhancedReportsView from './admin/EnhancedReportsView'
 import { DashboardProps, Notification, User as UserType } from '../types'
 import { useAttendance } from '../hooks/useAttendance'
 import { useAllAttendance } from '../hooks/useAllAttendance'
@@ -61,9 +65,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   ]
 
   // Combine menu items based on role - Admin gets more comprehensive menu
-  const menuItems: MenuItem[] = user.role === 'admin' 
+  const menuItems: MenuItem[] = user.role === 'admin'
     ? [
         { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
+        { id: 'live-location', label: 'Live Location', icon: MapPin },
+        { id: 'shift-management', label: 'Shift Management', icon: Clock },
         { id: 'pulse-tracking', label: 'Pulse Tracking', icon: Activity },
         { id: 'user-management', label: 'User Management', icon: Users },
         { id: 'attendance-logs', label: 'Attendance Logs', icon: ClipboardList },
@@ -80,6 +86,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       switch (activeSection) {
         case 'dashboard':
           return <AdminDashboard user={user} />
+        case 'live-location':
+          return <LiveLocationView />
+        case 'shift-management':
+          return <ShiftManagementView userId={user.id} />
         case 'pulse-tracking':
           return <PulseTrackingMain />
         case 'user-management':
@@ -87,9 +97,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         case 'attendance-logs':
           return <AttendanceLogsView />
         case 'leave-management':
-          return <LeaveManagementView />
+          return <LeaveCalendarView adminUserId={user.id} />
         case 'reports':
-          return <ReportsView user={user} />
+          return <EnhancedReportsView userRole={user.role} />
         case 'settings':
           return <SettingsView user={user} />
         default:
