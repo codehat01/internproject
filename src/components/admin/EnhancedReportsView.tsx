@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAllAttendance } from '../../hooks/useAllAttendance'
 import { useLeaveRequests } from '../../hooks/useLeaveRequests'
-import { Download, FileText, Calendar, Filter } from 'lucide-react'
+import { Download, FileText, Calendar, ListFilter as Filter } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 

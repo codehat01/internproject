@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { Icon } from 'leaflet'
 import { supabase } from '../../lib/supabase'
-import { MapPin, Users, Clock, AlertCircle } from 'lucide-react'
+import { MapPin, Users, Clock, CircleAlert as AlertCircle } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 
 interface UserLocation {

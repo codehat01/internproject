@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useShifts } from '../../hooks/useShifts'
 import { supabase } from '../../lib/supabase'
-import { Calendar, Clock, Users, Plus, Edit, Trash2, Save, X } from 'lucide-react'
+import { Calendar, Clock, Users, Plus, CreditCard as Edit, Trash2, Save, X } from 'lucide-react'
 
 interface Profile {
   id: string
