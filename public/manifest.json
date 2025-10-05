@@ -1,6 +1,6 @@
 {
-  "short_name": "Police App",
-  "name": "Police Attendance App",
+  "short_name": "Pulse",
+  "name": "Pulse Attendance App",
   "description": "Police Department Attendance and Management System",
   "icons": [
     {
@@ -57,4 +57,5 @@
   "theme_color": "#000080",
   "background_color": "#ffffff",
   "orientation": "portrait"
+
 }
