@@ -163,6 +163,9 @@ export const transformProfileToUser = (profile: Profile, email?: string): User =
     station_id: profile.station_id,
     phone: profile.phone || undefined,
     email: email || profile.email,
+    profile_photo_url: (profile as any).profile_photo_url || (profile as any).avatar_url || undefined,
+  };
+};
 
 export const validateBadgeNumber = (badgeNumber: string): boolean => {
   // Badge number should be alphanumeric and at least 3 characters
