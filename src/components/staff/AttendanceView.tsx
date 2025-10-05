@@ -8,6 +8,7 @@ import { shiftValidationService, type Shift } from '../../lib/shiftValidation'
 import { supabase } from '../../lib/supabase'
 import { geofenceService } from '../../lib/geofenceService'
 import PunchConfirmationDialog from '../shared/PunchConfirmationDialog'
+import { punchStateService } from '../../lib/punchStateService'
 
 interface AttendanceHistoryRecord {
   date: string;
@@ -45,7 +46,19 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
 
     checkPermissions()
     loadAttendanceHistory()
-    checkTodayPunchStatus()
+
+    const initializePunchState = async () => {
+      await punchStateService.initialize(user.id)
+      const state = punchStateService.getCurrentState()
+      setIsPunchedIn(state.isPunchedIn)
+      setLastPunchInTime(state.lastPunchTime)
+    }
+    initializePunchState()
+
+    const unsubscribe = punchStateService.subscribe((state) => {
+      setIsPunchedIn(state.isPunchedIn)
+      setLastPunchInTime(state.lastPunchTime)
+    })
 
     const initializeLocation = async () => {
       try {
@@ -73,36 +86,10 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
     return () => {
       clearInterval(timer)
       locationService.stopTracking()
+      unsubscribe()
     }
   }, [user.id])
 
-  const checkTodayPunchStatus = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      const { data: todayAttendance, error } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('timestamp', `${today}T00:00:00`)
-        .order('timestamp', { ascending: false })
-
-      if (error) throw error
-
-      if (todayAttendance && todayAttendance.length > 0) {
-        const lastPunch = todayAttendance[0]
-        if (lastPunch.punch_type === 'in') {
-          setIsPunchedIn(true)
-          setLastPunchInTime(new Date(lastPunch.timestamp))
-        } else {
-          setIsPunchedIn(false)
-        }
-      } else {
-        setIsPunchedIn(false)
-      }
-    } catch (error) {
-      console.error('Error checking punch status:', error)
-    }
-  }
 
   const updateGracePeriod = () => {
     if (currentShift && !isPunchedIn) {
@@ -314,7 +301,8 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
 
       await locationService.updateLocationInDatabase(location, true)
 
-      setIsPunchedIn(!isPunchedIn)
+      await punchStateService.updatePunchState(user.id, punchType)
+
       const action = punchType === 'in' ? 'Punched In' : 'Punched Out'
       showNotification(
         `${action} successfully at ${currentTime.toLocaleTimeString()}!`,
@@ -324,7 +312,6 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
       setShowConfirmDialog(false)
       setCapturedPhoto(null)
       loadAttendanceHistory()
-      checkTodayPunchStatus()
     } catch (error: any) {
       console.error('Error confirming punch:', error)
       showNotification('Failed to record attendance. Please try again.', 'error')
@@ -450,11 +437,13 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
                 <div style={{ fontSize: '14px', marginTop: '5px' }}>
                   {lastPunchInTime ? lastPunchInTime.toLocaleTimeString() : currentTime.toLocaleTimeString()}
                 </div>
+                <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Punch Out</div>
               </>
             ) : (
               <>
                 <Camera size={24} style={{ marginBottom: '10px' }} />
-                <div>Punched Out</div>
+                <div>Punch In</div>
+                <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Start</div>
               </>
             )}
           </div>

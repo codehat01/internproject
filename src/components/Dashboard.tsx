@@ -76,7 +76,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     ? [
         { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
         { id: 'live-location', label: 'Live Location', icon: MapPin },
-        { id: 'shift-management', label: 'Shift Management', icon: Clock },
         { id: 'pulse-tracking', label: 'Pulse Tracking', icon: Activity },
         { id: 'user-management', label: 'User Management', icon: Users },
         { id: 'attendance-logs', label: 'Attendance Logs', icon: ClipboardList },

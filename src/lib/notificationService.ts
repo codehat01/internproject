@@ -158,31 +158,98 @@ class NotificationService {
     };
   }
 
+  private permissionCheckInterval: NodeJS.Timeout | null = null;
+
   async requestNotificationPermission(): Promise<boolean> {
-    if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
+    try {
+      if (!('Notification' in window)) {
+        console.log('This browser does not support notifications');
+        return false;
+      }
+
+      if (Notification.permission === 'granted') {
+        return true;
+      }
+
+      if (Notification.permission === 'denied') {
+        console.log('Notification permission denied by user');
+        return false;
+      }
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          console.log('Notification permission granted');
+          return true;
+        }
+      } catch (error) {
+        console.error('Error requesting notification permission:', error);
+        return false;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Unexpected error in requestNotificationPermission:', error);
       return false;
     }
+  }
 
-    if (Notification.permission === 'granted') {
-      return true;
+  checkPermissionStatus(): 'granted' | 'denied' | 'default' | 'unsupported' {
+    if (!('Notification' in window)) {
+      return 'unsupported';
+    }
+    return Notification.permission;
+  }
+
+  startPermissionMonitoring(): void {
+    if (this.permissionCheckInterval) {
+      clearInterval(this.permissionCheckInterval);
     }
 
-    if (Notification.permission !== 'denied') {
-      const permission = await Notification.requestPermission();
-      return permission === 'granted';
-    }
+    this.permissionCheckInterval = setInterval(async () => {
+      const status = this.checkPermissionStatus();
+      if (status === 'default') {
+        const granted = await this.requestNotificationPermission();
+        if (!granted) {
+          console.log('User has not granted notification permission yet');
+        }
+      }
+    }, 60000);
+  }
 
-    return false;
+  stopPermissionMonitoring(): void {
+    if (this.permissionCheckInterval) {
+      clearInterval(this.permissionCheckInterval);
+      this.permissionCheckInterval = null;
+    }
   }
 
   showBrowserNotification(title: string, body: string, icon?: string): void {
-    if (Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: icon || '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-      });
+    try {
+      if (!('Notification' in window)) {
+        console.log('Notifications not supported');
+        return;
+      }
+
+      if (Notification.permission === 'granted') {
+        new Notification(title, {
+          body,
+          icon: icon || '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+        });
+      } else if (Notification.permission === 'default') {
+        this.requestNotificationPermission().then(granted => {
+          if (granted) {
+            new Notification(title, {
+              body,
+              icon: icon || '/icons/icon-192x192.png',
+              badge: '/icons/icon-72x72.png',
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error showing browser notification:', error);
     }
   }
 }

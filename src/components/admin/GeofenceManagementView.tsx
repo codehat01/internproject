@@ -456,11 +456,12 @@ const GeofenceManagementView: React.FC<GeofenceManagementViewProps> = ({ userId 
               : 'Select a geofence from the list to view it on the map, or click "Create New Geofence" to start.'}
           </p>
         </div>
-        <div style={{ height: 'min(500px, 60vh)', width: '100%', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%' }}>
+        <div style={{ height: 'min(500px, 60vh)', width: '100%', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%', position: 'relative' }}>
           <MapContainer
             center={mapCenter}
             zoom={15}
-            style={{ height: '100%', width: '100%' }}
+            style={{ height: '100%', width: '100%', maxWidth: '100%', maxHeight: '100%' }}
+            scrollWheelZoom={true}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

@@ -6,6 +6,7 @@ import { cameraService } from '../../lib/cameraService'
 import { geofenceService } from '../../lib/geofenceService'
 import { shiftValidationService, type Shift } from '../../lib/shiftValidation'
 import { locationService } from '../../lib/locationService'
+import { punchStateService } from '../../lib/punchStateService'
 
 interface LeaveRequestSummary {
   id: string;
@@ -39,6 +40,25 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
     loadStaffData()
     loadShiftData()
 
+    const initializePunchState = async () => {
+      await punchStateService.initialize(user.id)
+      const state = punchStateService.getCurrentState()
+      setIsPunchedIn(state.isPunchedIn)
+      setLastPunchInTime(state.lastPunchTime)
+      if (state.lastPunchTime) {
+        setPunchTime(state.lastPunchTime.toLocaleTimeString())
+      }
+    }
+    initializePunchState()
+
+    const unsubscribe = punchStateService.subscribe((state) => {
+      setIsPunchedIn(state.isPunchedIn)
+      setLastPunchInTime(state.lastPunchTime)
+      if (state.lastPunchTime) {
+        setPunchTime(state.lastPunchTime.toLocaleTimeString())
+      }
+    })
+
     locationService.startTracking(user.id, async (loc) => {
       const result = await geofenceService.validateLocation(loc.latitude, loc.longitude)
       setIsWithinGeofence(result.isValid)
@@ -46,6 +66,7 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
 
     return () => {
       locationService.stopTracking()
+      unsubscribe()
     }
   }, [user.id])
 
@@ -171,11 +192,12 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
 
       await locationService.updateLocationInDatabase(location, true)
 
-      setIsPunchedIn(!isPunchedIn)
+      await punchStateService.updatePunchState(user.id, punchType)
+
       const currentTime = new Date().toLocaleTimeString()
       setPunchTime(currentTime)
 
-      const action = !isPunchedIn ? 'Punched In' : 'Punched Out'
+      const action = punchType === 'in' ? 'Punched In' : 'Punched Out'
       showNotification(
         `${action} successfully at ${currentTime}!`,
         'success'
@@ -240,10 +262,14 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
               {isPunchedIn ? (
                 <>
                   <div>Punched In</div>
-                  <div style={{ fontSize: '14px', marginTop: '5px' }}>{punchTime}</div>
+                  <div style={{ fontSize: '14px', marginTop: '5px' }}>{punchTime || lastPunchInTime?.toLocaleTimeString()}</div>
+                  <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Punch Out</div>
                 </>
               ) : (
-                <div>Punch In /<br />Punch Out</div>
+                <>
+                  <div>Punch In</div>
+                  <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Start</div>
+                </>
               )}
             </div>
           </div>
