@@ -107,7 +107,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         case 'attendance-logs':
           return <AttendanceLogsView />
         case 'leave-management':
-          return <LeaveCalendarView adminUserId={user.id} />
+          return <LeaveManagementView user={user} />
         case 'reports':
           return <EnhancedReportsView userRole={user.role} />
         case 'settings':
@@ -494,13 +494,13 @@ const AttendanceLogsView: React.FC = () => {
   );
 }
 
-const LeaveManagementView: React.FC = () => {
+const LeaveManagementView: React.FC<{ user: UserType }> = ({ user }) => {
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const { leaveRequests, loading, error, approveLeaveRequest, rejectLeaveRequest } = useLeaveRequests({ isAdmin: true });
 
   const handleApprove = async (requestId: string) => {
-    const result = await approveLeaveRequest(requestId, 'admin-user-id');
+    const result = await approveLeaveRequest(requestId, user.id);
     if (result.success) {
       alert('Leave request approved successfully');
     } else {
@@ -513,7 +513,7 @@ const LeaveManagementView: React.FC = () => {
       alert('Please provide a reason for rejection');
       return;
     }
-    const result = await rejectLeaveRequest(requestId, 'admin-user-id', rejectReason);
+    const result = await rejectLeaveRequest(requestId, user.id, rejectReason);
     if (result.success) {
       alert('Leave request rejected');
       setSelectedRequest(null);

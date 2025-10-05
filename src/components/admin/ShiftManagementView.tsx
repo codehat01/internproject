@@ -72,8 +72,15 @@ const ShiftManagementView: React.FC<{ userId: string }> = ({ userId }) => {
       return
     }
 
+    if (Number.isNaN(Date.parse(formData.shift_start)) || Number.isNaN(Date.parse(formData.shift_end))) {
+      showNotification('Invalid date/time format', 'error')
+      return
+    }
+
     const shiftData = {
       ...formData,
+      shift_start: new Date(formData.shift_start).toISOString(),
+      shift_end: new Date(formData.shift_end).toISOString(),
       created_by: userId
     }
 

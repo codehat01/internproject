@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, Clock, CircleCheck as CheckCircle, CircleAlert as AlertCircle, ChartBar as BarChart3, MapPin, Calendar } from 'lucide-react'
+import { Users, Clock, CircleCheck as CheckCircle, CircleAlert as AlertCircle, ChartBar as BarChart3, MapPin, Calendar, Image, TriangleAlert as AlertTriangle } from 'lucide-react'
 import { getDashboardStats, getAllAttendanceLogs, getAllLeaveRequests, updateLeaveRequestStatus } from '../../lib/database'
 import { AdminDashboardProps, Notification, DashboardStats } from '../../types'
 
@@ -7,12 +7,20 @@ interface AttendanceLogSummary {
   id: string;
   name: string;
   badge: string;
+  department?: string;
   timeIn: string;
   timeOut: string;
   location: string;
   photo: string;
+  photoUrl?: string;
   timestamp: string;
   punchType: string;
+  complianceStatus?: string;
+  minutesLate?: number;
+  gracePeriodUsed?: boolean;
+  isWithinGeofence?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface PendingLeaveRequest {
@@ -48,18 +56,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
       const dashboardStats = await getDashboardStats()
       setStats(dashboardStats)
 
-      // Load recent attendance logs (limit to 5 for dashboard)
-      const attendanceLogs = await getAllAttendanceLogs(5)
+      // Load recent attendance logs (limit to 10 for dashboard)
+      const attendanceLogs = await getAllAttendanceLogs(10)
       const formattedAttendance = attendanceLogs.map(log => ({
         id: log.id,
         name: log.profiles.full_name,
         badge: log.profiles.badge_number,
-        timeIn: log.punch_type === 'in' ? new Date(log.timestamp).toLocaleTimeString() : '--',
-        timeOut: log.punch_type === 'out' ? new Date(log.timestamp).toLocaleTimeString() : '--',
-        location: log.latitude && log.longitude ? 'HQ Building' : 'Unknown',
+        department: log.profiles.department,
+        timeIn: log.punch_type === 'in' ? new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
+        timeOut: log.punch_type === 'out' ? new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
+        location: log.latitude && log.longitude ? `${log.latitude.toFixed(4)}, ${log.longitude.toFixed(4)}` : 'Unknown',
         photo: log.profiles.full_name.split(' ').map(n => n[0]).join(''),
+        photoUrl: log.photo_url || undefined,
         timestamp: log.timestamp,
-        punchType: log.punch_type
+        punchType: log.punch_type,
+        complianceStatus: (log as any).compliance_status,
+        minutesLate: (log as any).minutes_late,
+        gracePeriodUsed: (log as any).grace_period_used,
+        isWithinGeofence: (log as any).is_within_geofence,
+        latitude: log.latitude,
+        longitude: log.longitude
       }))
       setRecentAttendance(formattedAttendance)
 
@@ -240,8 +256,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               <thead>
                 <tr>
                   <th>Photo</th>
-                  <th>Officer Name</th>
+                  <th>Officer Details</th>
+                  <th>Punch Type</th>
                   <th>Time</th>
+                  <th>Status</th>
                   <th>Location</th>
                 </tr>
               </thead>
@@ -249,19 +267,104 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 {recentAttendance.map((record) => (
                   <tr key={record.id}>
                     <td>
-                      <div className="profile-img">{record.photo}</div>
+                      {record.photoUrl ? (
+                        <img
+                          src={record.photoUrl}
+                          alt={record.name}
+                          style={{
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid var(--navy-blue)'
+                          }}
+                        />
+                      ) : (
+                        <div className="profile-img" style={{ width: '50px', height: '50px', fontSize: '18px' }}>
+                          {record.photo}
+                        </div>
+                      )}
                     </td>
                     <td>
-                      {record.name}<br />
-                      <small style={{ color: 'var(--dark-gray)' }}>{record.badge}</small>
+                      <strong>{record.name}</strong><br />
+                      <small style={{ color: 'var(--dark-gray)' }}>
+                        {record.badge}
+                        {record.department && ` • ${record.department}`}
+                      </small>
                     </td>
                     <td>
-                      {record.timeIn}<br />
-                      {record.timeOut}
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        backgroundColor: record.punchType === 'in' ? '#e8f5e9' : '#fff3e0',
+                        color: record.punchType === 'in' ? '#2e7d32' : '#e65100',
+                        textTransform: 'uppercase'
+                      }}>
+                        {record.punchType === 'in' ? 'PUNCH IN' : 'PUNCH OUT'}
+                      </span>
                     </td>
                     <td>
-                      <MapPin size={16} style={{ marginRight: '5px' }} />
-                      {record.location}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <strong>{record.punchType === 'in' ? record.timeIn : record.timeOut}</strong>
+                        <small style={{ color: 'var(--dark-gray)', fontSize: '11px' }}>
+                          {new Date(record.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </small>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {record.complianceStatus && (
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor:
+                              record.complianceStatus === 'on_time' ? '#e8f5e9' :
+                              record.complianceStatus === 'late' ? '#fff3e0' :
+                              record.complianceStatus === 'early_departure' ? '#ffe0b2' :
+                              record.complianceStatus === 'overtime' ? '#e3f2fd' : '#f5f5f5',
+                            color:
+                              record.complianceStatus === 'on_time' ? '#2e7d32' :
+                              record.complianceStatus === 'late' ? '#e65100' :
+                              record.complianceStatus === 'early_departure' ? '#f57c00' :
+                              record.complianceStatus === 'overtime' ? '#1976d2' : '#666',
+                            textTransform: 'capitalize'
+                          }}>
+                            {record.complianceStatus.replace('_', ' ')}
+                          </span>
+                        )}
+                        {record.minutesLate !== undefined && record.minutesLate > 0 && (
+                          <small style={{ color: '#e65100', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                            <AlertTriangle size={10} />
+                            {record.minutesLate} min late
+                          </small>
+                        )}
+                        {record.gracePeriodUsed && (
+                          <small style={{ color: '#f57c00', fontSize: '10px' }}>
+                            Grace period used
+                          </small>
+                        )}
+                        {record.isWithinGeofence !== undefined && (
+                          <small style={{
+                            color: record.isWithinGeofence ? '#2e7d32' : '#d32f2f',
+                            fontSize: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '2px'
+                          }}>
+                            <MapPin size={10} />
+                            {record.isWithinGeofence ? 'Inside fence' : 'Outside fence'}
+                          </small>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <small style={{ fontSize: '11px', color: 'var(--dark-gray)' }}>
+                        {record.location}
+                      </small>
                     </td>
                   </tr>
                 ))}

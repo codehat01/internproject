@@ -81,6 +81,13 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
     if (!shift) {
       const upcoming = await shiftValidationService.getUpcomingShift(user.id)
       setUpcomingShift(upcoming)
+
+      if (upcoming) {
+        const minutesUntil = shiftValidationService.getTimeUntilShift(upcoming)
+        if (minutesUntil > 0 && minutesUntil < 60) {
+          console.log(`Shift starts in ${minutesUntil} minutes but not yet active. Grace period begins at shift start.`)
+        }
+      }
     }
   }
 
@@ -242,7 +249,15 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
       const punchType = isPunchedIn ? 'out' : 'in'
 
       if (punchType === 'in' && !currentShift) {
-        showNotification('No active shift assigned. Please contact your supervisor.', 'error')
+        if (upcomingShift) {
+          const minutesUntil = shiftValidationService.getTimeUntilShift(upcomingShift)
+          showNotification(
+            `Your shift starts in ${shiftValidationService.formatTimeRemaining(minutesUntil)}. You can only punch in during your assigned shift time.`,
+            'error'
+          )
+        } else {
+          showNotification('No active shift assigned. Please contact your supervisor.', 'error')
+        }
         return
       }
 

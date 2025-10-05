@@ -168,7 +168,7 @@ export interface TableColumn {
 export type AttendanceStatus = 'Present' | 'Late' | 'Absent';
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 export type PunchType = 'in' | 'out';
-export type UserRole = 'admin' | 'user';
+export type UserRole = 'admin' | 'staff';
 export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 // Utility Types
