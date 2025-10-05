@@ -4,7 +4,7 @@ import { getUserAttendanceSummary, getUserLeaveRequests, punchInOut } from '../.
 import { StaffDashboardProps, Notification, AttendanceSummary } from '../../types'
 import { cameraService } from '../../lib/cameraService'
 import { geofenceService } from '../../lib/geofenceService'
-import { shiftValidationService, type Shift } from '../../lib/shiftValidation'
+// import { shiftValidationService, type Shift } from '../../lib/shiftValidation' // SHIFT MANAGEMENT DISABLED
 import { locationService } from '../../lib/locationService'
 import { punchStateService } from '../../lib/punchStateService'
 
@@ -32,13 +32,13 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   })
   const [recentLeaveRequests, setRecentLeaveRequests] = useState<LeaveRequestSummary[]>([])
   const [loading, setLoading] = useState<boolean>(true)
-  const [currentShift, setCurrentShift] = useState<Shift | null>(null)
+  // const [currentShift, setCurrentShift] = useState<Shift | null>(null) // SHIFT MANAGEMENT DISABLED
   const [isWithinGeofence, setIsWithinGeofence] = useState<boolean>(false)
   const [lastPunchInTime, setLastPunchInTime] = useState<Date | null>(null)
 
   useEffect(() => {
     loadStaffData()
-    loadShiftData()
+    // loadShiftData() // SHIFT MANAGEMENT DISABLED
 
     const initializePunchState = async () => {
       await punchStateService.initialize(user.id)
@@ -70,10 +70,10 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
     }
   }, [user.id])
 
-  const loadShiftData = async (): Promise<void> => {
-    const shift = await shiftValidationService.getCurrentShift(user.id)
-    setCurrentShift(shift)
-  }
+  // const loadShiftData = async (): Promise<void> => {
+  //   const shift = await shiftValidationService.getCurrentShift(user.id)
+  //   setCurrentShift(shift)
+  // } // SHIFT MANAGEMENT DISABLED
 
   const loadStaffData = async (): Promise<void> => {
     try {
@@ -114,18 +114,7 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
     try {
       const location = await locationService.getCurrentPosition()
 
-      // GEOFENCE VALIDATION COMMENTED OUT - NOW ACCEPTS ANY LOCATION
-      // if (!isWithinGeofence) {
-      //   showNotification('You must be within the police station premises to punch in/out!', 'error')
-      //   return
-      // }
-
       const punchType = isPunchedIn ? 'out' : 'in'
-
-      if (punchType === 'in' && !currentShift) {
-        showNotification('No active shift assigned. Please contact your supervisor.', 'error')
-        return
-      }
 
       const hasPermission = await cameraService.requestPermission()
       if (!hasPermission) {
@@ -141,44 +130,13 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
         location.longitude
       )
 
-      let enhancedData: any = {
+      const enhancedData: any = {
         isWithinGeofence: geofenceResult.isValid,
         geofenceId: geofenceResult.geofence?.id || null,
       }
 
-      if (currentShift) {
-        enhancedData.shiftId = currentShift.id
-
-        if (punchType === 'in') {
-          const validation = shiftValidationService.validatePunchIn(
-            currentShift,
-            new Date()
-          )
-
-          if (!validation.isValid) {
-            showNotification(validation.message, 'error')
-            return
-          }
-
-          enhancedData.complianceStatus = validation.complianceStatus
-          enhancedData.gracePeriodUsed = validation.gracePeriodUsed
-          enhancedData.minutesLate = validation.minutesLate
-          setLastPunchInTime(new Date())
-
-          showNotification(validation.message, 'info')
-        } else if (punchType === 'out' && lastPunchInTime) {
-          const validation = shiftValidationService.validatePunchOut(
-            currentShift,
-            new Date(),
-            lastPunchInTime
-          )
-
-          enhancedData.complianceStatus = validation.complianceStatus
-          enhancedData.minutesEarly = validation.minutesEarly
-          enhancedData.overtimeMinutes = validation.overtimeMinutes
-
-          showNotification(validation.message, 'info')
-        }
+      if (punchType === 'in') {
+        setLastPunchInTime(new Date())
       }
 
       await punchInOut(
@@ -204,7 +162,7 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
       )
 
       loadStaffData()
-      loadShiftData()
+      // loadShiftData() // SHIFT MANAGEMENT DISABLED
     } catch (error: any) {
       console.error('Error punching in/out:', error)
       if (error.message === 'User cancelled photo capture') {

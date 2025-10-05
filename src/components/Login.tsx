@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Eye, EyeOff, User, Lock, Mail } from 'lucide-react'
+import { Shield, Eye, EyeOff, User, Lock, Mail, Phone, Building, Camera } from 'lucide-react'
 import { validateBadgeNumber, validatePassword } from '../lib/auth'
 import { sanitizeInput, rateLimiter, logSecurityEvent, SECURITY_CONFIG } from '../lib/security'
 import { LoginFormData, LoginProps, Notification, User as UserType } from '../types'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+
+const RANKS = ['Constable', 'Head Constable', 'ASI', 'SI', 'Inspector', 'DSP', 'SP', 'DIG', 'IG', 'DGP']
+const DEPARTMENTS = ['General', 'Traffic', 'Investigation', 'Patrol', 'Administration', 'Cyber Crime', 'Special Branch']
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const { signInWithBadge } = useAuth() as any
@@ -18,20 +21,29 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loginAttempts, setLoginAttempts] = useState<number>(0)
   const [isBlocked, setIsBlocked] = useState<boolean>(false)
   const [blockTimeRemaining, setBlockTimeRemaining] = useState<number>(0)
-  const [isGmailSignup, setIsGmailSignup] = useState<boolean>(false)
-  const [gmailEmail, setGmailEmail] = useState<string>('')
-  const [gmailPassword, setGmailPassword] = useState<string>('')
-  const [gmailConfirmPassword, setGmailConfirmPassword] = useState<string>('')
+  const [showSignup, setShowSignup] = useState<boolean>(false)
 
-  // Check for rate limiting on component mount
+  const [signupData, setSignupData] = useState({
+    badgeNumber: '',
+    fullName: '',
+    rank: 'Constable',
+    email: '',
+    phone: '',
+    department: 'General',
+    profilePhoto: null as File | null,
+    profilePhotoPreview: '' as string,
+    password: '',
+    confirmPassword: ''
+  })
+
   useEffect(() => {
     const clientId = 'login_attempt';
-    const isAllowed = rateLimiter.isAllowed(clientId, SECURITY_CONFIG.maxLoginAttempts, 5 * 60 * 1000); // 5 minutes
-    
+    const isAllowed = rateLimiter.isAllowed(clientId, SECURITY_CONFIG.maxLoginAttempts, 5 * 60 * 1000);
+
     if (!isAllowed) {
       setIsBlocked(true);
-      setBlockTimeRemaining(300); // 5 minutes in seconds
-      
+      setBlockTimeRemaining(300);
+
       const timer = setInterval(() => {
         setBlockTimeRemaining(prev => {
           if (prev <= 1) {
@@ -47,7 +59,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       return () => clearInterval(timer);
     }
 
-    // Return empty cleanup function when rate limit is allowed
     return () => {};
   }, []);
 
@@ -60,8 +71,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
-    
-    // Check if user is blocked due to too many attempts
+
     if (isBlocked) {
       const minutes = Math.ceil(blockTimeRemaining / 60);
       showNotification(`Too many login attempts. Please try again in ${minutes} minute(s).`, 'error');
@@ -71,18 +81,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true)
 
     try {
-      // Sanitize inputs
       const sanitizedBadgeId = sanitizeInput(formData.badgeId.trim());
       const sanitizedPassword = sanitizeInput(formData.password);
 
-      // Validate inputs
       if (!sanitizedBadgeId || !sanitizedPassword) {
         showNotification('Please enter Badge ID and Password!', 'error')
         setLoading(false)
         return
       }
 
-      // Validate badge number format
       const validatedBadge = validateBadgeNumber(sanitizedBadgeId);
       if (!validatedBadge) {
         showNotification('Invalid badge number format. Badge must be 3-20 alphanumeric characters.', 'error');
@@ -90,7 +97,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         return;
       }
 
-      // Check rate limiting
       const clientId = 'login_attempt';
       if (!rateLimiter.isAllowed(clientId, SECURITY_CONFIG.maxLoginAttempts, 5 * 60 * 1000)) {
         setIsBlocked(true);
@@ -100,14 +106,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         return;
       }
 
-      // Log login attempt
       logSecurityEvent('login_attempt', 'authentication', undefined, {
         badgeNumber: sanitizedBadgeId,
         timestamp: new Date().toISOString()
       });
 
-  // Real Supabase authentication with badge number via hook wrapper
-  const result = await signInWithBadge(sanitizedBadgeId, sanitizedPassword)
+      const result = await signInWithBadge(sanitizedBadgeId, sanitizedPassword)
 
       if (!result || result.error) {
         setLoginAttempts(prev => prev + 1);
@@ -118,13 +122,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       const userData: UserType = result.user as UserType
 
-      // Log successful login
       logSecurityEvent('login_success', 'authentication', userData.id, {
         badgeNumber: userData.badge_number,
         role: userData.role
       });
 
-      // Reset login attempts on success
       setLoginAttempts(0);
       rateLimiter.reset(clientId);
 
@@ -135,27 +137,24 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     } catch (error: any) {
       console.error('Login error:', error)
-      
-      // Increment login attempts
+
       setLoginAttempts(prev => {
         const newAttempts = prev + 1;
         if (newAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
           setIsBlocked(true);
-          setBlockTimeRemaining(300); // 5 minutes
+          setBlockTimeRemaining(300);
         }
         return newAttempts;
       });
 
-      // Log failed login attempt
       logSecurityEvent('login_failed', 'authentication', undefined, {
         badgeNumber: formData.badgeId,
         error: error.message,
         attempts: loginAttempts + 1
       });
-      
-      // Handle specific error messages
+
       let errorMessage = 'Login failed. Please try again.'
-      
+
       if (error.message === 'Invalid badge number') {
         errorMessage = 'Invalid badge number. Please check and try again.'
       } else if (error.message === 'Invalid login credentials') {
@@ -165,7 +164,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       } else if (error.message.includes('rate limit')) {
         errorMessage = 'Too many attempts. Please wait before trying again.'
       }
-      
+
       showNotification(errorMessage, 'error')
     } finally {
       setLoading(false)
@@ -174,17 +173,38 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    
-    // Sanitize input as user types
     const sanitizedValue = sanitizeInput(value);
-    
     setFormData({
       ...formData,
       [name]: sanitizedValue
     })
   }
 
-  const handleGmailSignup = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSignupChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setSignupData(prev => ({
+      ...prev,
+      [name]: sanitizeInput(value)
+    }))
+  }
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showNotification('Photo size must be less than 5MB', 'error')
+        return
+      }
+
+      setSignupData(prev => ({
+        ...prev,
+        profilePhoto: file,
+        profilePhotoPreview: URL.createObjectURL(file)
+      }))
+    }
+  }
+
+  const handleSignupSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
 
     if (isBlocked) {
@@ -196,37 +216,52 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true)
 
     try {
-      const sanitizedEmail = sanitizeInput(gmailEmail.trim().toLowerCase());
-      const sanitizedPassword = sanitizeInput(gmailPassword);
-      const sanitizedConfirmPassword = sanitizeInput(gmailConfirmPassword);
-
-      if (!sanitizedEmail || !sanitizedPassword || !sanitizedConfirmPassword) {
-        showNotification('Please fill all fields!', 'error')
+      if (!signupData.badgeNumber || !signupData.fullName || !signupData.email || !signupData.password) {
+        showNotification('Please fill all required fields!', 'error')
         setLoading(false)
         return
       }
 
-      if (!sanitizedEmail.endsWith('@gmail.com')) {
-        showNotification('Only Gmail addresses are allowed!', 'error')
+      if (!signupData.email.endsWith('@gmail.com')) {
+        showNotification('Only Gmail addresses (@gmail.com) are allowed!', 'error')
         setLoading(false)
         return
       }
 
-      if (sanitizedPassword !== sanitizedConfirmPassword) {
+      if (signupData.password !== signupData.confirmPassword) {
         showNotification('Passwords do not match!', 'error')
         setLoading(false)
         return
       }
 
-      if (sanitizedPassword.length < 8) {
+      if (signupData.password.length < 8) {
         showNotification('Password must be at least 8 characters long!', 'error')
         setLoading(false)
         return
       }
 
+      let photoUrl = null
+      if (signupData.profilePhoto) {
+        const fileExt = signupData.profilePhoto.name.split('.').pop()
+        const fileName = `${signupData.badgeNumber}-${Date.now()}.${fileExt}`
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('profile-photos')
+          .upload(fileName, signupData.profilePhoto)
+
+        if (uploadError) {
+          console.warn('Photo upload failed, continuing without photo:', uploadError)
+        } else if (uploadData) {
+          const { data: urlData } = supabase.storage
+            .from('profile-photos')
+            .getPublicUrl(uploadData.path)
+          photoUrl = urlData.publicUrl
+        }
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email: sanitizedEmail,
-        password: sanitizedPassword,
+        email: signupData.email,
+        password: signupData.password,
       })
 
       if (error) {
@@ -236,31 +271,41 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       if (data.user) {
-        const badgeNumber = sanitizeInput(formData.badgeId.trim()) || `GMAIL-${Date.now()}`
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([{
             id: data.user.id,
-            email: sanitizedEmail,
-            full_name: sanitizedEmail.split('@')[0],
+            email: signupData.email,
+            full_name: signupData.fullName,
+            badge_number: signupData.badgeNumber,
+            rank: signupData.rank,
             role: 'staff',
-            badge_number: badgeNumber,
-            department: 'General',
-            rank: 'Officer'
+            department: signupData.department,
+            phone: signupData.phone || null,
+            profile_photo_url: photoUrl
           }])
 
         if (profileError) {
           console.error('Profile creation error:', profileError)
+          showNotification('Account created but profile setup failed. Please contact admin.', 'error')
+        } else {
+          showNotification('Signup successful! You can now log in.', 'success')
+          setTimeout(() => {
+            setShowSignup(false)
+            setSignupData({
+              badgeNumber: '',
+              fullName: '',
+              rank: 'Constable',
+              email: '',
+              phone: '',
+              department: 'General',
+              profilePhoto: null,
+              profilePhotoPreview: '',
+              password: '',
+              confirmPassword: ''
+            })
+          }, 1500)
         }
-
-        showNotification('Account created successfully! Please login.', 'success')
-        setTimeout(() => {
-          setIsGmailSignup(false)
-          setGmailEmail('')
-          setGmailPassword('')
-          setGmailConfirmPassword('')
-          setFormData({ badgeId: '', password: '' })
-        }, 1500)
       }
     } catch (error: any) {
       console.error('Signup error:', error)
@@ -285,16 +330,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <p className="login-subtitle">Secure government attendance and reporting</p>
         </div>
 
-        <div style={{ position: 'relative', overflow: 'hidden', minHeight: '450px' }}>
+        <div style={{ position: 'relative', overflow: 'hidden', minHeight: '500px' }}>
           <div
             style={{
               display: 'flex',
               width: '200%',
-              transform: isGmailSignup ? 'translateX(-50%)' : 'translateX(0)',
-              transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+              transform: showSignup ? 'translateX(-50%)' : 'translateX(0)',
+              transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
-            <div style={{ width: '50%', padding: '0 5px' }}>
+            <div style={{ width: '50%', padding: '0 10px' }}>
+              <h3 style={{ color: 'var(--navy-blue)', marginBottom: '20px', fontSize: '20px', fontWeight: '700', textAlign: 'center' }}>Login</h3>
               <form onSubmit={handleSubmit} className="login-form">
                 <div className="form-group">
                   <label className="form-label">Badge ID</label>
@@ -350,84 +396,215 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setIsGmailSignup(true)}
+                    onClick={() => setShowSignup(true)}
                     className="btn btn-secondary"
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
                   >
-                    <Mail size={20} />
-                    Sign up with Gmail
+                    <User size={20} />
+                    Sign up
                   </button>
                 </div>
               </form>
             </div>
 
-            <div style={{ width: '50%', padding: '0 5px' }}>
-              <h3 style={{ color: 'var(--navy-blue)', marginBottom: '20px', fontSize: '18px', fontWeight: '600', textAlign: 'center' }}>Create Account</h3>
-              <form onSubmit={handleGmailSignup}>
-                <div className="form-group">
-                  <label className="form-label">Gmail Address</label>
+            <div style={{ width: '50%', padding: '0 10px' }}>
+              <h3 style={{ color: 'var(--navy-blue)', marginBottom: '20px', fontSize: '20px', fontWeight: '700', textAlign: 'center' }}>Create Account</h3>
+              <form onSubmit={handleSignupSubmit} style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Badge Number*</label>
                   <div className="input-wrapper">
-                    <Mail size={20} className="input-icon" />
+                    <User size={18} className="input-icon" />
+                    <input
+                      type="text"
+                      name="badgeNumber"
+                      value={signupData.badgeNumber}
+                      onChange={handleSignupChange}
+                      required
+                      className="form-input"
+                      placeholder="Your badge number"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Full Name*</label>
+                  <div className="input-wrapper">
+                    <User size={18} className="input-icon" />
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={signupData.fullName}
+                      onChange={handleSignupChange}
+                      required
+                      className="form-input"
+                      placeholder="Your full name"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Rank*</label>
+                  <div className="input-wrapper">
+                    <Shield size={18} className="input-icon" />
+                    <select
+                      name="rank"
+                      value={signupData.rank}
+                      onChange={handleSignupChange}
+                      required
+                      className="form-input"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
+                    >
+                      {RANKS.map(rank => (
+                        <option key={rank} value={rank}>{rank}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Role</label>
+                  <div className="input-wrapper">
+                    <User size={18} className="input-icon" />
+                    <input
+                      type="text"
+                      value="Staff"
+                      disabled
+                      className="form-input"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px', background: '#f0f0f0', cursor: 'not-allowed' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Email* (Gmail only)</label>
+                  <div className="input-wrapper">
+                    <Mail size={18} className="input-icon" />
                     <input
                       type="email"
-                      value={gmailEmail}
-                      onChange={(e) => setGmailEmail(e.target.value)}
+                      name="email"
+                      value={signupData.email}
+                      onChange={handleSignupChange}
                       required
                       className="form-input"
                       placeholder="yourname@gmail.com"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
                     />
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Username / Badge Number</label>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Phone</label>
                   <div className="input-wrapper">
-                    <User size={20} className="input-icon" />
+                    <Phone size={18} className="input-icon" />
                     <input
-                      type="text"
-                      value={formData.badgeId}
-                      onChange={handleChange}
-                      name="badgeId"
+                      type="tel"
+                      name="phone"
+                      value={signupData.phone}
+                      onChange={handleSignupChange}
+                      className="form-input"
+                      placeholder="Your phone number"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Department*</label>
+                  <div className="input-wrapper">
+                    <Building size={18} className="input-icon" />
+                    <select
+                      name="department"
+                      value={signupData.department}
+                      onChange={handleSignupChange}
                       required
                       className="form-input"
-                      placeholder="Enter your badge number"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
+                    >
+                      {DEPARTMENTS.map(dept => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Profile Photo</label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {signupData.profilePhotoPreview && (
+                      <img
+                        src={signupData.profilePhotoPreview}
+                        alt="Preview"
+                        style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--navy-blue)' }}
+                      />
+                    )}
+                    <label
+                      htmlFor="photo-upload"
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px',
+                        border: '2px dashed var(--dark-gray)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        color: 'var(--dark-gray)',
+                        background: 'var(--light-gray)'
+                      }}
+                    >
+                      <Camera size={20} />
+                      <span>{signupData.profilePhoto ? signupData.profilePhoto.name : 'Upload photo'}</span>
+                    </label>
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      style={{ display: 'none' }}
                     />
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Password</label>
+                <div className="form-group" style={{ marginBottom: '15px' }}>
+                  <label className="form-label">Password*</label>
                   <div className="input-wrapper">
-                    <Lock size={20} className="input-icon" />
+                    <Lock size={18} className="input-icon" />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      value={gmailPassword}
-                      onChange={(e) => setGmailPassword(e.target.value)}
+                      name="password"
+                      value={signupData.password}
+                      onChange={handleSignupChange}
                       required
                       className="form-input"
                       placeholder="At least 8 characters"
+                      style={{ fontSize: '14px', padding: '10px 40px 10px 40px' }}
                     />
                     <button
                       type="button"
                       onClick={togglePasswordVisibility}
                       className="password-toggle"
                     >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Confirm Password</label>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">Confirm Password*</label>
                   <div className="input-wrapper">
-                    <Lock size={20} className="input-icon" />
+                    <Lock size={18} className="input-icon" />
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      value={gmailConfirmPassword}
-                      onChange={(e) => setGmailConfirmPassword(e.target.value)}
+                      name="confirmPassword"
+                      value={signupData.confirmPassword}
+                      onChange={handleSignupChange}
                       required
                       className="form-input"
                       placeholder="Confirm your password"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
                     />
                   </div>
                 </div>
@@ -436,20 +613,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   type="submit"
                   disabled={loading || isBlocked}
                   className="login-btn"
+                  style={{ marginBottom: '10px' }}
                 >
                   {loading ? 'Creating Account...' : 'SIGN UP'}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsGmailSignup(false)
-                    setGmailEmail('')
-                    setGmailPassword('')
-                    setGmailConfirmPassword('')
-                  }}
+                  onClick={() => setShowSignup(false)}
                   className="btn btn-secondary"
-                  style={{ width: '100%', marginTop: '10px' }}
+                  style={{ width: '100%' }}
                 >
                   Back to Login
                 </button>

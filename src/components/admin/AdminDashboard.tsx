@@ -66,9 +66,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
       const dashboardStats = await getDashboardStats()
       setStats(dashboardStats)
 
-      // Load recent attendance logs (limit to 10 for dashboard)
-      const attendanceLogs = await getAllAttendanceLogs(10)
-      const formattedAttendance = attendanceLogs.map(log => ({
+      // Load recent attendance logs - filter only outside station punches
+      const allAttendanceLogs = await getAllAttendanceLogs(50)
+      const filteredLogs = allAttendanceLogs.filter(log => (log as any).is_within_geofence === false)
+      const formattedAttendance = filteredLogs.slice(0, 10).map(log => ({
         id: log.id,
         name: log.profiles.full_name,
         badge: log.profiles.badge_number,

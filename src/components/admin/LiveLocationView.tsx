@@ -58,7 +58,7 @@ const LiveLocationView: React.FC = () => {
   useEffect(() => {
     fetchUserLocations()
 
-    const channel = supabase
+    const locationsChannel = supabase
       .channel('user-locations-changes')
       .on(
         'postgres_changes',
@@ -73,8 +73,29 @@ const LiveLocationView: React.FC = () => {
       )
       .subscribe()
 
+    const attendanceChannel = supabase
+      .channel('attendance-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'attendance'
+        },
+        () => {
+          fetchUserLocations()
+        }
+      )
+      .subscribe()
+
+    const refreshInterval = setInterval(() => {
+      fetchUserLocations()
+    }, 30000)
+
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(locationsChannel)
+      supabase.removeChannel(attendanceChannel)
+      clearInterval(refreshInterval)
     }
   }, [])
 
@@ -133,7 +154,7 @@ const LiveLocationView: React.FC = () => {
           let attendance_status: 'present' | 'absent' | 'on_leave' = 'absent'
           if (activeLeave) {
             attendance_status = 'on_leave'
-          } else if (todayAttendance && todayAttendance.punch_type === 'IN') {
+          } else if (todayAttendance && todayAttendance.punch_type === 'in') {
             attendance_status = 'present'
           }
 

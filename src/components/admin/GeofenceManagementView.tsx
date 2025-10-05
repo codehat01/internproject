@@ -246,7 +246,7 @@ const GeofenceManagementView: React.FC<GeofenceManagementViewProps> = ({ userId 
         Geofence Management
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '20px', marginBottom: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px', marginBottom: '30px' }}>
         <div className="card">
           <h3 className="card-title">Existing Geofences</h3>
           <div style={{ marginBottom: '15px' }}>
