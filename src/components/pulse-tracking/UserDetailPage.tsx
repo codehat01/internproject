@@ -176,7 +176,19 @@ const UserDetailPage: React.FC<UserDetailPageProps> = ({ badgeNumber, onBack }) 
               border: '4px solid var(--white)',
               margin: '0 auto'
             }}>
-              {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              {user.profile_photo_url ? (
+                <img
+                  src={user.profile_photo_url}
+                  alt={user.full_name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
+              ) : (
+                user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
+              )}
             </div>
             <div style={{
               position: 'absolute',
