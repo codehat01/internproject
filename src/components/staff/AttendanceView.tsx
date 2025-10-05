@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Camera, MapPin, Clock, Calendar, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Camera, MapPin, Clock, Calendar, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle } from 'lucide-react'
 import { getUserAttendance, punchInOut } from '../../lib/database'
 import { AttendanceViewProps, Notification, LocationCoords } from '../../types'
 import { cameraService } from '../../lib/cameraService'
