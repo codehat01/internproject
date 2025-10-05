@@ -9,7 +9,7 @@ export interface LocationData {
 export class LocationService {
   private watchId: number | null = null;
   private userId: string | null = null;
-  private updateInterval: number = 300000;
+  private updateInterval: number = 30000;
   private lastUpdateTime: number = 0;
   private intervalId: NodeJS.Timeout | null = null;
 

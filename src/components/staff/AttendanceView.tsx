@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Camera, MapPin, Clock, Calendar, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle } from 'lucide-react'
+import { Camera, MapPin, Clock, Calendar, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, RefreshCw } from 'lucide-react'
 import { getUserAttendance, punchInOut } from '../../lib/database'
 import { AttendanceViewProps, Notification, LocationCoords } from '../../types'
 import { cameraService } from '../../lib/cameraService'
@@ -40,6 +40,21 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
     checkPermissions()
     loadAttendanceHistory()
     loadShiftData()
+
+    const initializeLocation = async () => {
+      try {
+        const currentLocation = await locationService.getCurrentPosition()
+        setLocation({
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude
+        })
+        await checkGeofence(currentLocation.latitude, currentLocation.longitude)
+      } catch (error) {
+        console.error('Error getting initial location:', error)
+      }
+    }
+
+    initializeLocation()
 
     locationService.startTracking(user.id, async (loc) => {
       setLocation({
@@ -89,6 +104,30 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         currentShift.id,
         result.distance || null
       )
+    }
+
+    return result
+  }
+
+  const handleRefreshLocation = async () => {
+    try {
+      showNotification('Refreshing location...', 'info')
+      const currentLocation = await locationService.getCurrentPosition()
+      setLocation({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude
+      })
+      const result = await checkGeofence(currentLocation.latitude, currentLocation.longitude)
+      await locationService.updateLocationInDatabase(currentLocation, true)
+
+      if (result.isValid) {
+        showNotification('Location updated: Inside geofence boundary', 'success')
+      } else {
+        showNotification('Location updated: Outside geofence boundary', 'error')
+      }
+    } catch (error) {
+      console.error('Error refreshing location:', error)
+      showNotification('Failed to refresh location. Please try again.', 'error')
     }
   }
 
@@ -477,6 +516,14 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
               </span>
             </div>
           )}
+          <button
+            className="btn btn-secondary"
+            onClick={handleRefreshLocation}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', padding: '8px 16px' }}
+          >
+            <RefreshCw size={16} />
+            Refresh Location
+          </button>
         </div>
 
         {/* Action Buttons */}

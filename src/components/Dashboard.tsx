@@ -14,6 +14,7 @@ import LiveLocationView from './admin/LiveLocationView'
 import ShiftManagementView from './admin/ShiftManagementView'
 import LeaveCalendarView from './admin/LeaveCalendarView'
 import EnhancedReportsView from './admin/EnhancedReportsView'
+import GeofenceManagementView from './admin/GeofenceManagementView'
 import { DashboardProps, Notification, User as UserType } from '../types'
 import { useAttendance } from '../hooks/useAttendance'
 import { useAllAttendance } from '../hooks/useAllAttendance'
@@ -70,6 +71,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
         { id: 'live-location', label: 'Live Location', icon: MapPin },
         { id: 'shift-management', label: 'Shift Management', icon: Clock },
+        { id: 'geofence-management', label: 'Geofence Management', icon: MapPin },
         { id: 'pulse-tracking', label: 'Pulse Tracking', icon: Activity },
         { id: 'user-management', label: 'User Management', icon: Users },
         { id: 'attendance-logs', label: 'Attendance Logs', icon: ClipboardList },
@@ -90,6 +92,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           return <LiveLocationView />
         case 'shift-management':
           return <ShiftManagementView userId={user.id} />
+        case 'geofence-management':
+          return <GeofenceManagementView userId={user.id} />
         case 'pulse-tracking':
           return <PulseTrackingMain />
         case 'user-management':

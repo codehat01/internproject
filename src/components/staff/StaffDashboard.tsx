@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { Clock, Calendar, FileText, CircleCheck as CheckCircle, Circle as XCircle, CircleAlert as AlertCircle } from 'lucide-react'
 import { getUserAttendanceSummary, getUserLeaveRequests, punchInOut } from '../../lib/database'
 import { StaffDashboardProps, Notification, AttendanceSummary } from '../../types'
+import { cameraService } from '../../lib/cameraService'
+import { geofenceService } from '../../lib/geofenceService'
+import { shiftValidationService, type Shift } from '../../lib/shiftValidation'
+import { locationService } from '../../lib/locationService'
 
 interface LeaveRequestSummary {
   id: string;
@@ -23,10 +27,28 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
   })
   const [recentLeaveRequests, setRecentLeaveRequests] = useState<LeaveRequestSummary[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [currentShift, setCurrentShift] = useState<Shift | null>(null)
+  const [isWithinGeofence, setIsWithinGeofence] = useState<boolean>(false)
+  const [lastPunchInTime, setLastPunchInTime] = useState<Date | null>(null)
 
   useEffect(() => {
     loadStaffData()
+    loadShiftData()
+
+    locationService.startTracking(user.id, async (loc) => {
+      const result = await geofenceService.validateLocation(loc.latitude, loc.longitude)
+      setIsWithinGeofence(result.isValid)
+    })
+
+    return () => {
+      locationService.stopTracking()
+    }
   }, [user.id])
+
+  const loadShiftData = async (): Promise<void> => {
+    const shift = await shiftValidationService.getCurrentShift(user.id)
+    setCurrentShift(shift)
+  }
 
   const loadStaffData = async (): Promise<void> => {
     try {
@@ -65,43 +87,104 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
 
   const handlePunch = async (): Promise<void> => {
     try {
-      // Get current location
-      if (!navigator.geolocation) {
-        showNotification('Geolocation is not supported by this browser', 'error')
+      const location = await locationService.getCurrentPosition()
+
+      if (!isWithinGeofence) {
+        showNotification('You must be within the police station premises to punch in/out!', 'error')
         return
       }
 
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-          const { latitude, longitude } = position.coords
-          const punchType = isPunchedIn ? 'out' : 'in'
-          
-          // Record punch in database
-          await punchInOut(user.id, punchType, latitude, longitude)
-          
-          const currentTime = new Date().toLocaleTimeString()
-          setIsPunchedIn(!isPunchedIn)
-          setPunchTime(currentTime)
-          
-          if (!isPunchedIn) {
-            showNotification('Punched In successfully!', 'success')
-          } else {
-            showNotification('Punched Out successfully!', 'info')
+      const punchType = isPunchedIn ? 'out' : 'in'
+
+      if (punchType === 'in' && !currentShift) {
+        showNotification('No active shift assigned. Please contact your supervisor.', 'error')
+        return
+      }
+
+      const hasPermission = await cameraService.requestPermission()
+      if (!hasPermission) {
+        showNotification('Camera permission is required for attendance!', 'error')
+        return
+      }
+
+      showNotification('Please position your face in the camera...', 'info')
+      const photoDataUrl = await cameraService.capturePhotoWithPreview()
+
+      const geofenceResult = await geofenceService.validateLocation(
+        location.latitude,
+        location.longitude
+      )
+
+      let enhancedData: any = {
+        isWithinGeofence: geofenceResult.isValid,
+        geofenceId: geofenceResult.geofence?.id || null,
+      }
+
+      if (currentShift) {
+        enhancedData.shiftId = currentShift.id
+
+        if (punchType === 'in') {
+          const validation = shiftValidationService.validatePunchIn(
+            currentShift,
+            new Date()
+          )
+
+          if (!validation.isValid) {
+            showNotification(validation.message, 'error')
+            return
           }
 
-          // Reload data to reflect changes
-          loadStaffData()
-        } catch (error) {
-          console.error('Error recording punch:', error)
-          showNotification('Error recording attendance', 'error')
+          enhancedData.complianceStatus = validation.complianceStatus
+          enhancedData.gracePeriodUsed = validation.gracePeriodUsed
+          enhancedData.minutesLate = validation.minutesLate
+          setLastPunchInTime(new Date())
+
+          showNotification(validation.message, 'info')
+        } else if (punchType === 'out' && lastPunchInTime) {
+          const validation = shiftValidationService.validatePunchOut(
+            currentShift,
+            new Date(),
+            lastPunchInTime
+          )
+
+          enhancedData.complianceStatus = validation.complianceStatus
+          enhancedData.minutesEarly = validation.minutesEarly
+          enhancedData.overtimeMinutes = validation.overtimeMinutes
+
+          showNotification(validation.message, 'info')
         }
-      }, (error) => {
-        console.error('Geolocation error:', error)
-        showNotification('Location access required for attendance', 'error')
-      })
-    } catch (error) {
-      console.error('Error in handlePunch:', error)
-      showNotification('Error recording attendance', 'error')
+      }
+
+      await punchInOut(
+        user.id,
+        punchType,
+        location.latitude,
+        location.longitude,
+        photoDataUrl,
+        enhancedData
+      )
+
+      await locationService.updateLocationInDatabase(location, true)
+
+      setIsPunchedIn(!isPunchedIn)
+      const currentTime = new Date().toLocaleTimeString()
+      setPunchTime(currentTime)
+
+      const action = !isPunchedIn ? 'Punched In' : 'Punched Out'
+      showNotification(
+        `${action} successfully at ${currentTime}!`,
+        'success'
+      )
+
+      loadStaffData()
+      loadShiftData()
+    } catch (error: any) {
+      console.error('Error punching in/out:', error)
+      if (error.message === 'User cancelled photo capture') {
+        showNotification('Photo capture cancelled', 'info')
+      } else {
+        showNotification('Failed to record attendance. Please try again.', 'error')
+      }
     }
   }
 
