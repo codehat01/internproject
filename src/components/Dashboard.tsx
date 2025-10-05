@@ -174,7 +174,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               className="user-avatar"
               onClick={() => setProfileOpen(prev => !prev)}
             >
-              {user.full_name.split(' ').map(n => n[0]).join('')}
+              {user.profile_photo_url ? (
+                <img
+                  src={user.profile_photo_url}
+                  alt={user.full_name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '50%'
+                  }}
+                />
+              ) : (
+                user.full_name.split(' ').map(n => n[0]).join('')
+              )}
             </div>
           </div>
         </div>
