@@ -148,7 +148,62 @@ const UserManagement: React.FC<UserManagementProps> = () => {
 
   const handleEditUser = (user: StaffMember): void => {
     setSelectedUser(user)
+    setNewUser({
+      badge_number: user.badge_number,
+      full_name: user.full_name,
+      rank: user.rank,
+      role: user.role,
+      phone: user.phone || '',
+      email: user.email || '',
+      department: user.department || 'General',
+      password: ''
+    })
     setShowEditModal(true)
+  }
+
+  const handleUpdateUser = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault()
+
+    if (!selectedUser || !newUser.badge_number || !newUser.full_name || !newUser.email) {
+      showNotification('Please fill in all required fields!', 'error')
+      return
+    }
+
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          badge_number: newUser.badge_number,
+          full_name: newUser.full_name,
+          rank: newUser.rank,
+          role: newUser.role,
+          phone: newUser.phone || null,
+          email: newUser.email,
+          department: newUser.department || null
+        })
+        .eq('id', selectedUser.id)
+
+      if (profileError) throw profileError
+
+      showNotification(`User ${newUser.full_name} updated successfully!`, 'success')
+
+      setShowEditModal(false)
+      setSelectedUser(null)
+      setNewUser({
+        badge_number: '',
+        full_name: '',
+        rank: 'Constable',
+        role: 'staff',
+        phone: '',
+        email: '',
+        department: 'General',
+        password: ''
+      })
+      fetchUsers()
+    } catch (error: any) {
+      console.error('Error updating user:', error)
+      showNotification(error.message || 'Error updating user', 'error')
+    }
   }
 
   const handleDeleteUser = async (user: StaffMember): Promise<void> => {
@@ -285,7 +340,6 @@ const UserManagement: React.FC<UserManagementProps> = () => {
                 <th>Badge</th>
                 <th>Name</th>
                 <th>Rank</th>
-                <th>Role</th>
                 <th>Department</th>
                 <th>Contact</th>
                 <th>Status</th>
@@ -306,15 +360,37 @@ const UserManagement: React.FC<UserManagementProps> = () => {
                   </td>
                   <td>
                     <div>
-                      <div style={{ fontWeight: '600' }}>{staff.full_name}</div>
+                      <div style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {staff.full_name}
+                        {staff.role === 'admin' && (
+                          <span
+                            className="status-badge"
+                            style={{
+                              background: `${getRoleBadgeColor(staff.role)}20`,
+                              color: getRoleBadgeColor(staff.role),
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              textTransform: 'capitalize',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                          >
+                            <Shield size={10} />
+                            Admin
+                          </span>
+                        )}
+                      </div>
                       <small style={{ color: 'var(--dark-gray)' }}>{staff.email}</small>
                     </div>
                   </td>
                   <td>
-                    <span 
-                      className="status-badge" 
-                      style={{ 
-                        background: `${getRankBadgeColor(staff.rank)}20`, 
+                    <span
+                      className="status-badge"
+                      style={{
+                        background: `${getRankBadgeColor(staff.rank)}20`,
                         color: getRankBadgeColor(staff.rank),
                         padding: '5px 10px',
                         borderRadius: '15px',
@@ -323,23 +399,6 @@ const UserManagement: React.FC<UserManagementProps> = () => {
                       }}
                     >
                       {staff.rank}
-                    </span>
-                  </td>
-                  <td>
-                    <span 
-                      className="status-badge" 
-                      style={{ 
-                        background: `${getRoleBadgeColor(staff.role)}20`, 
-                        color: getRoleBadgeColor(staff.role),
-                        padding: '5px 10px',
-                        borderRadius: '15px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        textTransform: 'capitalize'
-                      }}
-                    >
-                      {staff.role === 'admin' && <Shield size={12} style={{ marginRight: '3px' }} />}
-                      {staff.role}
                     </span>
                   </td>
                   <td>{staff.department}</td>
@@ -531,6 +590,129 @@ const UserManagement: React.FC<UserManagementProps> = () => {
                 </button>
                 <button type="submit" className="btn btn-golden">
                   Add User
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && selectedUser && (
+        <div className="modal" style={{ display: 'flex' }}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3 style={{ color: 'var(--navy-blue)' }}>Edit User</h3>
+              <button className="close-btn" onClick={() => {
+                setShowEditModal(false)
+                setSelectedUser(null)
+              }}>&times;</button>
+            </div>
+
+            <form onSubmit={handleUpdateUser}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Badge Number *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g., STAFF004"
+                    value={newUser.badge_number}
+                    onChange={(e) => setNewUser({...newUser, badge_number: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Full Name *</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Officer Full Name"
+                    value={newUser.full_name}
+                    onChange={(e) => setNewUser({...newUser, full_name: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Rank</label>
+                  <select
+                    className="form-control"
+                    value={newUser.rank}
+                    onChange={(e) => setNewUser({...newUser, rank: e.target.value})}
+                  >
+                    <option value="Constable">Constable</option>
+                    <option value="SI">SI</option>
+                    <option value="Inspector">Inspector</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Role</label>
+                  <select
+                    className="form-control"
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                  >
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Email *</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="officer@police.gov"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Phone</label>
+                  <input
+                    type="tel"
+                    className="form-control"
+                    placeholder="+91-9876543210"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Department</label>
+                <select
+                  className="form-control"
+                  value={newUser.department}
+                  onChange={(e) => setNewUser({...newUser, department: e.target.value})}
+                >
+                  <option value="General">General</option>
+                  <option value="Traffic">Traffic</option>
+                  <option value="Investigation">Investigation</option>
+                  <option value="Patrol">Patrol</option>
+                  <option value="Administration">Administration</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setSelectedUser(null)
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-golden">
+                  Update User
                 </button>
               </div>
             </form>

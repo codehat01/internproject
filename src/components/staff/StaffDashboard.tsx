@@ -15,7 +15,11 @@ interface LeaveRequestSummary {
   statusColor: string;
 }
 
-const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
+interface ExtendedStaffDashboardProps extends StaffDashboardProps {
+  onNavigate?: (section: string) => void;
+}
+
+const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigate }) => {
   const [isPunchedIn, setIsPunchedIn] = useState<boolean>(false)
   const [punchTime, setPunchTime] = useState<string>('')
   const [notification, setNotification] = useState<Notification>({ message: '', type: 'info', show: false })
@@ -252,16 +256,16 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
         <div className="card quick-actions-card">
           <h3 className="card-title">Quick Actions</h3>
           <div className="quick-actions-buttons">
-            <button 
+            <button
               className="btn btn-golden action-btn"
-              onClick={() => showNotification('Redirecting to leave request form...', 'info')}
+              onClick={() => onNavigate && onNavigate('leave-requests')}
             >
               <FileText size={20} />
               Submit Leave Request
             </button>
-            <button 
+            <button
               className="btn btn-primary action-btn"
-              onClick={() => showNotification('Opening attendance history...', 'info')}
+              onClick={() => onNavigate && onNavigate('attendance-history')}
             >
               <Calendar size={20} />
               View Attendance History

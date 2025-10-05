@@ -77,7 +77,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
         { id: 'live-location', label: 'Live Location', icon: MapPin },
         { id: 'shift-management', label: 'Shift Management', icon: Clock },
-        { id: 'geofence-management', label: 'Geofence Management', icon: MapPin },
         { id: 'pulse-tracking', label: 'Pulse Tracking', icon: Activity },
         { id: 'user-management', label: 'User Management', icon: Users },
         { id: 'attendance-logs', label: 'Attendance Logs', icon: ClipboardList },
@@ -119,7 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       // Staff-only sections
       switch (activeSection) {
         case 'dashboard':
-          return <StaffDashboard user={user} />
+          return <StaffDashboard user={user} onNavigate={setActiveSection} />
         case 'attendance':
           return <AttendanceView user={user} />
         case 'leave-requests':
@@ -135,7 +134,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         case 'settings':
           return <SettingsView user={user} />
         default:
-          return <StaffDashboard user={user} />
+          return <StaffDashboard user={user} onNavigate={setActiveSection} />
       }
     }
   }

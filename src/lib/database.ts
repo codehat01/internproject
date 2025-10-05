@@ -330,16 +330,20 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 
     if (staffError) throw staffError;
 
-    // Get today's attendance count
+    // Get today's attendance count (unique users who punched in)
     const today = new Date().toISOString().split('T')[0];
-    const { count: todayAttendance, error: attendanceError } = await supabase
+    const { data: todayAttendanceData, error: attendanceError } = await supabase
       .from('attendance')
-      .select('*', { count: 'exact', head: true })
+      .select('user_id')
       .eq('punch_type', 'in')
       .gte('timestamp', `${today}T00:00:00`)
       .lt('timestamp', `${today}T23:59:59`);
 
     if (attendanceError) throw attendanceError;
+
+    // Count unique users
+    const uniqueUsers = new Set(todayAttendanceData?.map(record => record.user_id) || []);
+    const todayAttendance = uniqueUsers.size;
 
     // Get pending leave requests count
     const { count: pendingLeaves, error: leaveError } = await supabase

@@ -246,8 +246,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
         </div>
       </div>
 
-      {/* Bottom Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px' }}>
+      {/* Two Column Layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '25px', marginBottom: '30px' }}>
         {/* Recent Attendance Logs */}
         <div className="card">
           <h3 className="card-title">Recent Attendance Logs</h3>
@@ -362,9 +362,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
                       </div>
                     </td>
                     <td>
-                      <small style={{ fontSize: '11px', color: 'var(--dark-gray)' }}>
-                        {record.location}
-                      </small>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <small style={{ fontSize: '11px', color: 'var(--dark-gray)' }}>
+                          {record.location}
+                        </small>
+                        {record.latitude && record.longitude && (
+                          <button
+                            className="btn"
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              background: 'var(--golden)',
+                              color: 'white',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                            onClick={() => {
+                              if (onNavigate) {
+                                onNavigate('live-location')
+                              }
+                            }}
+                          >
+                            <MapPin size={12} />
+                            View
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -375,17 +399,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
 
         {/* Pending Leave Requests */}
         <div className="card">
-          <h3 className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Pending Leave Requests</span>
-            <button
-              className="btn"
-              style={{ background: 'var(--golden)', color: 'white', padding: '8px 16px', fontSize: '14px' }}
-              onClick={() => onNavigate && onNavigate('live-location')}
-            >
-              <MapPin size={16} style={{ marginRight: '5px' }} />
-              View Live Map
-            </button>
-          </h3>
+          <h3 className="card-title">Pending Leave Requests</h3>
           <div>
             {pendingLeaveRequests.length === 0 ? (
               <div style={{ padding: '40px', textAlign: 'center', color: 'var(--dark-gray)' }}>
