@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Polygon, useMapEvents, useMap } from 'react-leaflet'
-import { MapPin, Save, Plus, Trash2, Edit2, X } from 'lucide-react'
+import { MapPin, Save, Plus, Trash2, CreditCard as Edit2, X } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { geofenceService, type Geofence } from '../../lib/geofenceService'
