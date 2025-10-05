@@ -6,7 +6,7 @@ import { LoginFormData, LoginProps, Notification, User as UserType } from '../ty
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 
-const RANKS = ['Constable', 'Head Constable', 'ASI', 'SI', 'Inspector', 'DSP', 'SP', 'DIG', 'IG', 'DGP']
+const RANKS = ['Constable', 'Head Constable', 'Sub Inspector']
 const DEPARTMENTS = ['General', 'Traffic', 'Investigation', 'Patrol', 'Administration', 'Cyber Crime', 'Special Branch']
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -271,10 +271,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{
-            id: data.user.id,
+        const { error: profileError } =.from('profiles')
+          .update({
             email: signupData.email,
             full_name: signupData.fullName,
             badge_number: signupData.badgeNumber,
@@ -283,7 +281,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             department: signupData.department,
             phone: signupData.phone || null,
             profile_photo_url: photoUrl
-          }])
+          })
+         .eq('id', data.user.id)
 
         if (profileError) {
           console.error('Profile creation error:', profileError)
