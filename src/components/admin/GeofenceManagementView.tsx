@@ -246,7 +246,7 @@ const GeofenceManagementView: React.FC<GeofenceManagementViewProps> = ({ userId 
         Geofence Management
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '20px', marginBottom: '30px' }}>
         <div className="card">
           <h3 className="card-title">Existing Geofences</h3>
           <div style={{ marginBottom: '15px' }}>
@@ -456,7 +456,7 @@ const GeofenceManagementView: React.FC<GeofenceManagementViewProps> = ({ userId 
               : 'Select a geofence from the list to view it on the map, or click "Create New Geofence" to start.'}
           </p>
         </div>
-        <div style={{ height: '500px', borderRadius: '8px', overflow: 'hidden' }}>
+        <div style={{ height: 'min(500px, 60vh)', width: '100%', borderRadius: '8px', overflow: 'hidden', maxWidth: '100%' }}>
           <MapContainer
             center={mapCenter}
             zoom={15}

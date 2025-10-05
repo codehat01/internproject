@@ -6,6 +6,7 @@ interface PunchConfirmationDialogProps {
   punchType: 'in' | 'out';
   photoDataUrl: string;
   location: { latitude: number; longitude: number } | null;
+  geofenceStatus?: string;
   onConfirm: () => void;
   onCancel: () => void;
   onRetakePhoto: () => void;
@@ -16,6 +17,7 @@ const PunchConfirmationDialog: React.FC<PunchConfirmationDialogProps> = ({
   punchType,
   photoDataUrl,
   location,
+  geofenceStatus,
   onConfirm,
   onCancel,
   onRetakePhoto,
@@ -143,6 +145,13 @@ const PunchConfirmationDialog: React.FC<PunchConfirmationDialogProps> = ({
                     </div>
                   </div>
                 </div>
+                {geofenceStatus && (
+                  <div style={{ marginTop: '15px', padding: '10px', backgroundColor: geofenceStatus === 'Inside station' ? '#d4edda' : '#fff3cd', borderRadius: '5px', border: `1px solid ${geofenceStatus === 'Inside station' ? '#c3e6cb' : '#ffc107'}` }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: geofenceStatus === 'Inside station' ? '#155724' : '#856404', textAlign: 'center' }}>
+                      Status: {geofenceStatus}
+                    </div>
+                  </div>
+                )}
                 <div style={{ marginTop: '15px' }}>
                   <div
                     style={{

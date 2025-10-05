@@ -71,7 +71,7 @@ const Landing: React.FC<Props> = ({ onEnter }) => {
 
       {/* Footer */}
       <div className="landing-footer">
-        © 2025 Government of India, Ministry of Home Affairs - All Rights Reserved
+        @carapace 2025
       </div>
     </div>
   )

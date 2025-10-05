@@ -5,6 +5,7 @@ import { AttendanceViewProps, Notification, LocationCoords } from '../../types'
 import { cameraService } from '../../lib/cameraService'
 import { locationService } from '../../lib/locationService'
 import { shiftValidationService, type Shift } from '../../lib/shiftValidation'
+import { supabase } from '../../lib/supabase'
 import { geofenceService } from '../../lib/geofenceService'
 import PunchConfirmationDialog from '../shared/PunchConfirmationDialog'
 
@@ -29,6 +30,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
   const [currentShift, setCurrentShift] = useState<Shift | null>(null)
   const [upcomingShift, setUpcomingShift] = useState<Shift | null>(null)
   const [gracePeriodMinutes, setGracePeriodMinutes] = useState<number>(0)
+  const [currentGeofenceStatus, setCurrentGeofenceStatus] = useState<string>('Outside station')
   const [isWithinGeofence, setIsWithinGeofence] = useState<boolean>(false)
   const [lastPunchInTime, setLastPunchInTime] = useState<Date | null>(null)
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
@@ -43,7 +45,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
 
     checkPermissions()
     loadAttendanceHistory()
-    loadShiftData()
+    checkTodayPunchStatus()
 
     const initializeLocation = async () => {
       try {
@@ -74,20 +76,31 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
     }
   }, [user.id])
 
-  const loadShiftData = async () => {
-    const shift = await shiftValidationService.getCurrentShift(user.id)
-    setCurrentShift(shift)
+  const checkTodayPunchStatus = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { data: todayAttendance, error } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('timestamp', `${today}T00:00:00`)
+        .order('timestamp', { ascending: false })
 
-    if (!shift) {
-      const upcoming = await shiftValidationService.getUpcomingShift(user.id)
-      setUpcomingShift(upcoming)
+      if (error) throw error
 
-      if (upcoming) {
-        const minutesUntil = shiftValidationService.getTimeUntilShift(upcoming)
-        if (minutesUntil > 0 && minutesUntil < 60) {
-          console.log(`Shift starts in ${minutesUntil} minutes but not yet active. Grace period begins at shift start.`)
+      if (todayAttendance && todayAttendance.length > 0) {
+        const lastPunch = todayAttendance[0]
+        if (lastPunch.punch_type === 'in') {
+          setIsPunchedIn(true)
+          setLastPunchInTime(new Date(lastPunch.timestamp))
+        } else {
+          setIsPunchedIn(false)
         }
+      } else {
+        setIsPunchedIn(false)
       }
+    } catch (error) {
+      console.error('Error checking punch status:', error)
     }
   }
 
@@ -105,18 +118,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
   const checkGeofence = async (latitude: number, longitude: number) => {
     const result = await geofenceService.validateLocation(latitude, longitude)
     setIsWithinGeofence(result.isValid)
-
-    if (!result.isValid && currentShift && isPunchedIn) {
-      await geofenceService.logBoundaryViolation(
-        user.id,
-        latitude,
-        longitude,
-        result.geofence?.id || null,
-        currentShift.id,
-        result.distance || null
-      )
-    }
-
+    setCurrentGeofenceStatus(result.isValid ? 'Inside station' : 'Outside station')
     return result
   }
 
@@ -177,12 +179,13 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
       attendance.forEach(record => {
         const date = new Date(record.timestamp).toDateString()
         if (!groupedAttendance[date]) {
-          groupedAttendance[date] = { date, timeIn: null, timeOut: null, location: null }
+          groupedAttendance[date] = { date, timeIn: null, timeOut: null, location: null, geofenceStatus: null }
         }
-        
+
         if (record.punch_type === 'in') {
           groupedAttendance[date].timeIn = new Date(record.timestamp).toLocaleTimeString()
-          groupedAttendance[date].location = record.latitude && record.longitude ? 'HQ Building' : 'Unknown'
+          groupedAttendance[date].geofenceStatus = record.is_within_geofence ? 'Inside station' : 'Outside station'
+          groupedAttendance[date].location = record.latitude && record.longitude ? 'Recorded' : 'Unknown'
         } else if (record.punch_type === 'out') {
           groupedAttendance[date].timeOut = new Date(record.timestamp).toLocaleTimeString()
         }
@@ -192,16 +195,13 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
       const formattedHistory = Object.values(groupedAttendance).map(day => {
         let hours = '0'
         let status = 'Absent'
-        
+
         if (day.timeIn && day.timeOut) {
           const timeInDate = new Date(`${day.date} ${day.timeIn}`)
           const timeOutDate = new Date(`${day.date} ${day.timeOut}`)
           const diffHours = (timeOutDate - timeInDate) / (1000 * 60 * 60)
           hours = diffHours.toFixed(2)
-          
-          // Check if late (after 9:00 AM)
-          const nineAM = new Date(`${day.date} 09:00:00`)
-          status = timeInDate > nineAM ? 'Late' : 'Present'
+          status = 'Present'
         } else if (day.timeIn) {
           status = 'Present'
         }
@@ -212,7 +212,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
           timeOut: day.timeOut || '--',
           hours,
           status,
-          location: day.location || '--'
+          location: day.geofenceStatus || '--'
         }
       }).sort((a, b) => new Date(b.date) - new Date(a.date))
 
@@ -240,26 +240,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         if (!hasPermission) return
       }
 
-      // GEOFENCE VALIDATION COMMENTED OUT - NOW ACCEPTS ANY LOCATION
-      // if (!isWithinGeofence) {
-      //   showNotification('You must be within the police station premises to punch in/out!', 'error')
-      //   return
-      // }
-
       const punchType = isPunchedIn ? 'out' : 'in'
-
-      if (punchType === 'in' && !currentShift) {
-        if (upcomingShift) {
-          const minutesUntil = shiftValidationService.getTimeUntilShift(upcomingShift)
-          showNotification(
-            `Your shift starts in ${shiftValidationService.formatTimeRemaining(minutesUntil)}. You can only punch in during your assigned shift time.`,
-            'error'
-          )
-        } else {
-          showNotification('No active shift assigned. Please contact your supervisor.', 'error')
-        }
-        return
-      }
 
       if (!cameraPermission) {
         const hasPermission = await cameraService.requestPermission()
@@ -278,6 +259,12 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         showNotification('Location not available. Please try again.', 'error')
         return
       }
+
+      const geofenceResult = await geofenceService.validateLocation(
+        location.latitude,
+        location.longitude
+      )
+      setCurrentGeofenceStatus(geofenceResult.isValid ? 'Inside station' : 'Outside station')
 
       setCapturedPhoto(photoDataUrl)
       setPendingPunchType(punchType)
@@ -302,50 +289,18 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
 
       const punchType = pendingPunchType
 
-      // GEOFENCE VALIDATION COMMENTED OUT - STORING LOCATION ONLY
-      // const geofenceResult = await geofenceService.validateLocation(
-      //   location.latitude,
-      //   location.longitude
-      // )
+      const geofenceResult = await geofenceService.validateLocation(
+        location.latitude,
+        location.longitude
+      )
 
       let enhancedData: any = {
-        isWithinGeofence: true,
-        geofenceId: null,
+        isWithinGeofence: geofenceResult.isValid,
+        geofenceId: geofenceResult.geofence?.id || null,
       }
 
-      if (currentShift) {
-        enhancedData.shiftId = currentShift.id
-
-        if (punchType === 'in') {
-          const validation = shiftValidationService.validatePunchIn(
-            currentShift,
-            new Date()
-          )
-
-          if (!validation.isValid) {
-            showNotification(validation.message, 'error')
-            return
-          }
-
-          enhancedData.complianceStatus = validation.complianceStatus
-          enhancedData.gracePeriodUsed = validation.gracePeriodUsed
-          enhancedData.minutesLate = validation.minutesLate
-          setLastPunchInTime(new Date())
-
-          showNotification(validation.message, 'info')
-        } else if (punchType === 'out' && lastPunchInTime) {
-          const validation = shiftValidationService.validatePunchOut(
-            currentShift,
-            new Date(),
-            lastPunchInTime
-          )
-
-          enhancedData.complianceStatus = validation.complianceStatus
-          enhancedData.minutesEarly = validation.minutesEarly
-          enhancedData.overtimeMinutes = validation.overtimeMinutes
-
-          showNotification(validation.message, 'info')
-        }
+      if (punchType === 'in') {
+        setLastPunchInTime(new Date())
       }
 
       await punchInOut(
@@ -369,7 +324,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
       setShowConfirmDialog(false)
       setCapturedPhoto(null)
       loadAttendanceHistory()
-      loadShiftData()
+      checkTodayPunchStatus()
     } catch (error: any) {
       console.error('Error confirming punch:', error)
       showNotification('Failed to record attendance. Please try again.', 'error')
@@ -443,61 +398,6 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         Attendance
       </h2>
 
-      {/* Shift Information */}
-      {currentShift && (
-        <div className="card" style={{ marginBottom: '20px', background: 'linear-gradient(135deg, #1e3a5f 0%, #0f2951 100%)', color: 'white' }}>
-          <h3 className="card-title" style={{ color: 'white' }}>Current Shift</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-            <div>
-              <div style={{ fontSize: '14px', opacity: 0.8 }}>Shift Name</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{currentShift.shift_name}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', opacity: 0.8 }}>Start Time</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                {shiftValidationService.formatShiftTime(currentShift.shift_start)}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', opacity: 0.8 }}>End Time</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                {shiftValidationService.formatShiftTime(currentShift.shift_end)}
-              </div>
-            </div>
-            {gracePeriodMinutes > 0 && !isPunchedIn && (
-              <div>
-                <div style={{ fontSize: '14px', opacity: 0.8 }}>Grace Period</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffd700' }}>
-                  {gracePeriodMinutes} min remaining
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {!currentShift && upcomingShift && (
-        <div className="card" style={{ marginBottom: '20px', background: '#e3f2fd', border: '1px solid var(--navy-blue)' }}>
-          <h3 className="card-title" style={{ color: 'var(--navy-blue)' }}>Upcoming Shift</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-            <div>
-              <div style={{ fontSize: '14px', color: 'var(--dark-gray)' }}>Shift Name</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--navy-blue)' }}>
-                {upcomingShift.shift_name}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', color: 'var(--dark-gray)' }}>Starts In</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--navy-blue)' }}>
-                {shiftValidationService.formatTimeRemaining(
-                  shiftValidationService.getTimeUntilShift(upcomingShift)
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Punch In/Out Section */}
       <div className="card" style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h3 className="card-title">Punch In / Punch Out</h3>
@@ -546,15 +446,15 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
             {isPunchedIn ? (
               <>
                 <Camera size={24} style={{ marginBottom: '10px' }} />
-                <div>Punch Out</div>
+                <div>Punched In</div>
                 <div style={{ fontSize: '14px', marginTop: '5px' }}>
-                  In since: {currentTime.toLocaleTimeString()}
+                  {lastPunchInTime ? lastPunchInTime.toLocaleTimeString() : currentTime.toLocaleTimeString()}
                 </div>
               </>
             ) : (
               <>
                 <Camera size={24} style={{ marginBottom: '10px' }} />
-                <div>Punch In</div>
+                <div>Punched Out</div>
               </>
             )}
           </div>
@@ -657,13 +557,12 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         <ul style={{ color: 'var(--dark-gray)', lineHeight: '1.6' }}>
           <li>Photo verification is required for each punch</li>
           <li>Ensure your location services are enabled for accurate tracking</li>
-          <li>Punch in within 20 minutes of your assigned shift time to avoid being marked late</li>
-          <li>Failure to punch in within 1 hour will result in absent marking</li>
+          <li>Punch in at least once per day to be marked as Present</li>
+          <li>If you do not punch in on a day, you will be marked as Absent</li>
           <li>Review your photo and location before confirming</li>
           <li>You can retake your photo if needed</li>
-          <li>Approved leaves will not count as absent</li>
-          <li>Early departure before shift end will be tracked</li>
-          <li>Overtime will be recorded if you punch out after shift end</li>
+          <li>Location status (Inside/Outside station) will be recorded with each punch</li>
+          <li>Toggle between Punch In and Punch Out throughout your work day</li>
         </ul>
       </div>
 
@@ -678,6 +577,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         punchType={pendingPunchType}
         photoDataUrl={capturedPhoto || ''}
         location={location}
+        geofenceStatus={currentGeofenceStatus}
         onConfirm={handleConfirmPunch}
         onCancel={handleCancelPunch}
         onRetakePhoto={handleRetakePhoto}

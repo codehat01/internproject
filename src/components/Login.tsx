@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Eye, EyeOff, User, Lock } from 'lucide-react'
+import { Shield, Eye, EyeOff, User, Lock, Mail } from 'lucide-react'
 import { validateBadgeNumber, validatePassword } from '../lib/auth'
 import { sanitizeInput, rateLimiter, logSecurityEvent, SECURITY_CONFIG } from '../lib/security'
 import { LoginFormData, LoginProps, Notification, User as UserType } from '../types'
 import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../lib/supabase'
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const { signInWithBadge } = useAuth() as any
@@ -17,6 +18,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loginAttempts, setLoginAttempts] = useState<number>(0)
   const [isBlocked, setIsBlocked] = useState<boolean>(false)
   const [blockTimeRemaining, setBlockTimeRemaining] = useState<number>(0)
+  const [isGmailSignup, setIsGmailSignup] = useState<boolean>(false)
+  const [gmailEmail, setGmailEmail] = useState<string>('')
+  const [gmailPassword, setGmailPassword] = useState<string>('')
+  const [gmailConfirmPassword, setGmailConfirmPassword] = useState<string>('')
 
   // Check for rate limiting on component mount
   useEffect(() => {
@@ -179,6 +184,90 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     })
   }
 
+  const handleGmailSignup = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault()
+
+    if (isBlocked) {
+      const minutes = Math.ceil(blockTimeRemaining / 60);
+      showNotification(`Too many attempts. Please try again in ${minutes} minute(s).`, 'error');
+      return;
+    }
+
+    setLoading(true)
+
+    try {
+      const sanitizedEmail = sanitizeInput(gmailEmail.trim().toLowerCase());
+      const sanitizedPassword = sanitizeInput(gmailPassword);
+      const sanitizedConfirmPassword = sanitizeInput(gmailConfirmPassword);
+
+      if (!sanitizedEmail || !sanitizedPassword || !sanitizedConfirmPassword) {
+        showNotification('Please fill all fields!', 'error')
+        setLoading(false)
+        return
+      }
+
+      if (!sanitizedEmail.endsWith('@gmail.com')) {
+        showNotification('Only Gmail addresses are allowed!', 'error')
+        setLoading(false)
+        return
+      }
+
+      if (sanitizedPassword !== sanitizedConfirmPassword) {
+        showNotification('Passwords do not match!', 'error')
+        setLoading(false)
+        return
+      }
+
+      if (sanitizedPassword.length < 8) {
+        showNotification('Password must be at least 8 characters long!', 'error')
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: sanitizedEmail,
+        password: sanitizedPassword,
+      })
+
+      if (error) {
+        showNotification(error.message, 'error')
+        setLoading(false)
+        return
+      }
+
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: data.user.id,
+            email: sanitizedEmail,
+            full_name: sanitizedEmail.split('@')[0],
+            role: 'staff',
+            badge_number: `GMAIL-${Date.now()}`,
+            department: 'General',
+            rank: 'Officer'
+          }])
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError)
+        }
+
+        showNotification('Account created successfully! Please login.', 'success')
+        setTimeout(() => {
+          setIsGmailSignup(false)
+          setGmailEmail('')
+          setGmailPassword('')
+          setGmailConfirmPassword('')
+        }, 1500)
+      }
+    } catch (error: any) {
+      console.error('Signup error:', error)
+      showNotification('Failed to create account. Please try again.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const togglePasswordVisibility = (): void => {
     setShowPassword(!showPassword);
   }
@@ -233,22 +322,117 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading || isBlocked}
             className="login-btn"
           >
             {isBlocked ? `Blocked (${Math.ceil(blockTimeRemaining/60)}m)` : loading ? 'Logging in...' : 'LOGIN'}
           </button>
-
-          <div className="login-links">
-            <a href="#" onClick={(e) => { e.preventDefault(); showNotification('Feature coming soon!', 'info') }}>Forgot Username?</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); showNotification('Feature coming soon!', 'info') }}>Forgot Password?</a>
-          </div>
         </form>
 
+        {!isGmailSignup && (
+          <div style={{ textAlign: 'center', margin: '20px 0' }}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--dark-gray)' }}></div>
+              <span style={{ padding: '0 10px', color: 'var(--dark-gray)', fontSize: '14px' }}>OR</span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--dark-gray)' }}></div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsGmailSignup(true)}
+              className="btn btn-secondary"
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+            >
+              <Mail size={20} />
+              Sign up with Gmail
+            </button>
+          </div>
+        )}
+
+        {isGmailSignup && (
+          <div style={{ marginTop: '20px' }}>
+            <h3 style={{ color: 'var(--navy-blue)', marginBottom: '20px', fontSize: '18px', fontWeight: '600', textAlign: 'center' }}>Create Gmail Account</h3>
+            <form onSubmit={handleGmailSignup}>
+              <div className="form-group">
+                <label className="form-label">Gmail Address</label>
+                <div className="input-wrapper">
+                  <Mail size={20} className="input-icon" />
+                  <input
+                    type="email"
+                    value={gmailEmail}
+                    onChange={(e) => setGmailEmail(e.target.value)}
+                    required
+                    className="form-input"
+                    placeholder="yourname@gmail.com"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <div className="input-wrapper">
+                  <Lock size={20} className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={gmailPassword}
+                    onChange={(e) => setGmailPassword(e.target.value)}
+                    required
+                    className="form-input"
+                    placeholder="At least 8 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="password-toggle"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Confirm Password</label>
+                <div className="input-wrapper">
+                  <Lock size={20} className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={gmailConfirmPassword}
+                    onChange={(e) => setGmailConfirmPassword(e.target.value)}
+                    required
+                    className="form-input"
+                    placeholder="Confirm your password"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || isBlocked}
+                className="login-btn"
+              >
+                {loading ? 'Creating Account...' : 'SIGN UP'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsGmailSignup(false)
+                  setGmailEmail('')
+                  setGmailPassword('')
+                  setGmailConfirmPassword('')
+                }}
+                className="btn btn-secondary"
+                style={{ width: '100%', marginTop: '10px' }}
+              >
+                Back to Login
+              </button>
+            </form>
+          </div>
+        )}
+
         <div className="login-footer">
-          GOVERNMENT OF INDIA • © 2025
+          @carapace 2025
         </div>
 
         <div className={`notification ${notification.type} ${notification.show ? 'show' : ''}`}>
