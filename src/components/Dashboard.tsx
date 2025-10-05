@@ -948,7 +948,7 @@ const ReportsView: React.FC<PlaceholderViewProps> = ({ user }) => {
   );
 }
 
-const SettingsView: React.FC<PlaceholderViewProps> = ({ user }) => (
+const SettingsViewPlaceholder: React.FC<PlaceholderViewProps> = ({ user }) => (
   <div>
     <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px' }}>Settings</h2>
     <div className="card">
