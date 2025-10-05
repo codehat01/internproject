@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Activity, Video as LucideIcon, MapPin, Clock } from 'lucide-react'
 import ashokPillar from '../assets/ashok-pillar-symbol-icon-blue.webp'
 
@@ -19,6 +19,7 @@ import { DashboardProps, Notification, User as UserType } from '../types'
 import { useAttendance } from '../hooks/useAttendance'
 import { useAllAttendance } from '../hooks/useAllAttendance'
 import { useLeaveRequests } from '../hooks/useLeaveRequests'
+import { notificationService, startNotificationWorker } from '../lib/notificationService'
 
 interface MenuItem {
   id: string;
@@ -31,6 +32,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [notification, setNotification] = useState<Notification>({ message: '', type: 'info', show: false })
   const [profileOpen, setProfileOpen] = useState<boolean>(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false)
+
+  useEffect(() => {
+    notificationService.requestNotificationPermission()
+    startNotificationWorker(user.id)
+  }, [user.id])
 
   const showNotification = (message: string, type: Notification['type']): void => {
     setNotification({ message, type, show: true })

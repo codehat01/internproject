@@ -6,6 +6,7 @@ import { cameraService } from '../../lib/cameraService'
 import { locationService } from '../../lib/locationService'
 import { shiftValidationService, type Shift } from '../../lib/shiftValidation'
 import { geofenceService } from '../../lib/geofenceService'
+import PunchConfirmationDialog from '../shared/PunchConfirmationDialog'
 
 interface AttendanceHistoryRecord {
   date: string;
@@ -30,6 +31,9 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
   const [gracePeriodMinutes, setGracePeriodMinutes] = useState<number>(0)
   const [isWithinGeofence, setIsWithinGeofence] = useState<boolean>(false)
   const [lastPunchInTime, setLastPunchInTime] = useState<Date | null>(null)
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
+  const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
+  const [pendingPunchType, setPendingPunchType] = useState<'in' | 'out'>('in')
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -229,10 +233,11 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         if (!hasPermission) return
       }
 
-      if (!isWithinGeofence) {
-        showNotification('You must be within the police station premises to punch in/out!', 'error')
-        return
-      }
+      // GEOFENCE VALIDATION COMMENTED OUT - NOW ACCEPTS ANY LOCATION
+      // if (!isWithinGeofence) {
+      //   showNotification('You must be within the police station premises to punch in/out!', 'error')
+      //   return
+      // }
 
       const punchType = isPunchedIn ? 'out' : 'in'
 
@@ -259,14 +264,38 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         return
       }
 
-      const geofenceResult = await geofenceService.validateLocation(
-        location.latitude,
-        location.longitude
-      )
+      setCapturedPhoto(photoDataUrl)
+      setPendingPunchType(punchType)
+      setShowConfirmDialog(true)
+
+    } catch (error: any) {
+      console.error('Error in handlePunch:', error)
+      if (error.message === 'User cancelled photo capture') {
+        showNotification('Photo capture cancelled', 'info')
+      } else {
+        showNotification('Failed to capture photo. Please try again.', 'error')
+      }
+    }
+  }
+
+  const handleConfirmPunch = async (): Promise<void> => {
+    try {
+      if (!capturedPhoto || !location) {
+        showNotification('Missing photo or location data.', 'error')
+        return
+      }
+
+      const punchType = pendingPunchType
+
+      // GEOFENCE VALIDATION COMMENTED OUT - STORING LOCATION ONLY
+      // const geofenceResult = await geofenceService.validateLocation(
+      //   location.latitude,
+      //   location.longitude
+      // )
 
       let enhancedData: any = {
-        isWithinGeofence: geofenceResult.isValid,
-        geofenceId: geofenceResult.geofence?.id || null,
+        isWithinGeofence: true,
+        geofenceId: null,
       }
 
       if (currentShift) {
@@ -309,29 +338,49 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         punchType,
         location.latitude,
         location.longitude,
-        photoDataUrl,
+        capturedPhoto,
         enhancedData
       )
 
       await locationService.updateLocationInDatabase(location, true)
 
       setIsPunchedIn(!isPunchedIn)
-      const action = !isPunchedIn ? 'Punched In' : 'Punched Out'
+      const action = punchType === 'in' ? 'Punched In' : 'Punched Out'
       showNotification(
         `${action} successfully at ${currentTime.toLocaleTimeString()}!`,
         'success'
       )
 
+      setShowConfirmDialog(false)
+      setCapturedPhoto(null)
       loadAttendanceHistory()
       loadShiftData()
     } catch (error: any) {
-      console.error('Error punching in/out:', error)
+      console.error('Error confirming punch:', error)
+      showNotification('Failed to record attendance. Please try again.', 'error')
+    }
+  }
+
+  const handleRetakePhoto = async (): Promise<void> => {
+    try {
+      showNotification('Please position your face in the camera...', 'info')
+      const photoDataUrl = await cameraService.capturePhotoWithPreview()
+      setCapturedPhoto(photoDataUrl)
+      showNotification('Photo captured! Review and confirm.', 'success')
+    } catch (error: any) {
+      console.error('Error retaking photo:', error)
       if (error.message === 'User cancelled photo capture') {
         showNotification('Photo capture cancelled', 'info')
       } else {
-        showNotification('Failed to record attendance. Please try again.', 'error')
+        showNotification('Failed to capture photo. Please try again.', 'error')
       }
     }
+  }
+
+  const handleCancelPunch = (): void => {
+    setShowConfirmDialog(false)
+    setCapturedPhoto(null)
+    showNotification('Punch cancelled', 'info')
   }
 
   const requestLocationPermission = async (): Promise<boolean> => {
@@ -591,13 +640,13 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
           Attendance Instructions
         </h3>
         <ul style={{ color: 'var(--dark-gray)', lineHeight: '1.6' }}>
-          <li>You must be inside the police station geofence boundary to punch in/out</li>
           <li>Photo verification is required for each punch</li>
-          <li>Ensure your location services are enabled</li>
-          <li>Punch in within your assigned shift time</li>
-          <li>Grace period: 20 minutes after shift start</li>
-          <li>Late arrivals after grace period will be marked as late</li>
-          <li>Leaving the geofence during shift will log a boundary violation</li>
+          <li>Ensure your location services are enabled for accurate tracking</li>
+          <li>Punch in within 20 minutes of your assigned shift time to avoid being marked late</li>
+          <li>Failure to punch in within 1 hour will result in absent marking</li>
+          <li>Review your photo and location before confirming</li>
+          <li>You can retake your photo if needed</li>
+          <li>Approved leaves will not count as absent</li>
           <li>Early departure before shift end will be tracked</li>
           <li>Overtime will be recorded if you punch out after shift end</li>
         </ul>
@@ -607,6 +656,17 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
       <div className={`notification ${notification.type} ${notification.show ? 'show' : ''}`}>
         {notification.message}
       </div>
+
+      {/* Confirmation Dialog */}
+      <PunchConfirmationDialog
+        isOpen={showConfirmDialog}
+        punchType={pendingPunchType}
+        photoDataUrl={capturedPhoto || ''}
+        location={location}
+        onConfirm={handleConfirmPunch}
+        onCancel={handleCancelPunch}
+        onRetakePhoto={handleRetakePhoto}
+      />
     </div>
   )
 }

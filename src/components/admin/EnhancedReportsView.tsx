@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useAllAttendance } from '../../hooks/useAllAttendance'
 import { useLeaveRequests } from '../../hooks/useLeaveRequests'
-import { Download, FileText, Calendar, ListFilter as Filter } from 'lucide-react'
+import { Download, FileText, Calendar, ListFilter as Filter, Camera, MapPin } from 'lucide-react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import AttendancePhotoView from './AttendancePhotoView'
 
 interface ReportFilters {
   startDate: string
@@ -22,6 +23,7 @@ const EnhancedReportsView: React.FC<{ userRole: string }> = ({ userRole }) => {
     reportType: 'combined'
   })
   const [departments, setDepartments] = useState<string[]>([])
+  const [selectedAttendanceId, setSelectedAttendanceId] = useState<string | null>(null)
 
   const { attendance, loading: attendanceLoading } = useAllAttendance({ pageSize: 1000 })
   const { leaveRequests, loading: leaveLoading } = useLeaveRequests({ isAdmin: true })
@@ -431,6 +433,7 @@ const EnhancedReportsView: React.FC<{ userRole: string }> = ({ userRole }) => {
                         <th>Date</th>
                         <th>Time</th>
                         <th>Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -440,32 +443,30 @@ const EnhancedReportsView: React.FC<{ userRole: string }> = ({ userRole }) => {
                           <td>{record.profiles?.badge_number || '--'}</td>
                           <td>{record.profiles?.department || '--'}</td>
                           <td>
-                            <span style={{
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              backgroundColor: record.punch_type === 'in' ? '#e8f5e9' : '#fff3e0',
-                              color: record.punch_type === 'in' ? '#2e7d32' : '#e65100',
-                              fontWeight: '600'
-                            }}>
-                              {record.punch_type.toUpperCase()}
-                            </span>
-                          </td>
-                          <td>{new Date(record.timestamp).toLocaleDateString()}</td>
-                          <td>{new Date(record.timestamp).toLocaleTimeString()}</td>
-                          <td>
-                            <span className="status-badge status-present">
-                              {record.status}
-                            </span>
+                            <button
+                              onClick={() => setSelectedAttendanceId(record.id)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: 'var(--navy-blue)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                fontSize: '12px'
+                              }}
+                            >
+                              <Camera size={14} />
+                              <MapPin size={14} />
+                              View
+                            </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {filteredAttendance.length > 100 && (
-                    <div style={{ padding: '10px', textAlign: 'center', color: '#666' }}>
-                      Showing first 100 records. Export to see all {filteredAttendance.length} records.
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -493,23 +494,32 @@ const EnhancedReportsView: React.FC<{ userRole: string }> = ({ userRole }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredLeave.map((record) => (
+                      {filteredLeave.slice(0, 100).map((record) => (
                         <tr key={record.id}>
                           <td>{record.profiles?.full_name || 'Unknown'}</td>
                           <td>{record.profiles?.badge_number || '--'}</td>
                           <td>{record.profiles?.department || '--'}</td>
                           <td>{new Date(record.start_date).toLocaleDateString()}</td>
                           <td>{new Date(record.end_date).toLocaleDateString()}</td>
-                          <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {record.reason}
                           </td>
                           <td>
-                            <span className={`status-badge ${
-                              record.status === 'approved' ? 'status-present' :
-                              record.status === 'pending' ? 'status-late' :
-                              'status-absent'
-                            }`}>
-                              {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                            <span style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              backgroundColor:
+                                record.status === 'approved' ? '#e8f5e9' :
+                                record.status === 'rejected' ? '#ffebee' :
+                                '#fff3e0',
+                              color:
+                                record.status === 'approved' ? '#2e7d32' :
+                                record.status === 'rejected' ? '#c62828' :
+                                '#e65100',
+                              fontWeight: '600',
+                              textTransform: 'capitalize'
+                            }}>
+                              {record.status}
                             </span>
                           </td>
                         </tr>
@@ -522,6 +532,11 @@ const EnhancedReportsView: React.FC<{ userRole: string }> = ({ userRole }) => {
           )}
         </>
       )}
+
+      <AttendancePhotoView
+        attendanceId={selectedAttendanceId || undefined}
+        onClose={() => setSelectedAttendanceId(null)}
+      />
     </div>
   )
 }
