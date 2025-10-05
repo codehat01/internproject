@@ -93,7 +93,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       // Admin-only sections
       switch (activeSection) {
         case 'dashboard':
-          return <AdminDashboard user={user} />
+          return <AdminDashboard user={user} onNavigate={setActiveSection} />
         case 'live-location':
           return <LiveLocationView />
         case 'shift-management':
@@ -251,72 +251,156 @@ const AttendanceHistoryView: React.FC<PlaceholderViewProps> = ({ user }) => {
 
   const formatDate = (timestamp: string) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      present: 'status-present',
-      late: 'status-late',
-      absent: 'status-absent'
-    };
-    return statusMap[status] || 'status-badge';
+  const groupedAttendance = () => {
+    const grouped: { [key: string]: any } = {};
+    attendance.forEach(record => {
+      const date = new Date(record.timestamp).toDateString();
+      if (!grouped[date]) {
+        grouped[date] = { date, records: [] };
+      }
+      grouped[date].records.push(record);
+    });
+    return Object.values(grouped);
   };
 
   return (
     <div>
-      <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px' }}>Attendance History</h2>
+      <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px', fontSize: '28px', fontWeight: '700' }}>Attendance History</h2>
       <div className="card">
         <h3 className="card-title">Detailed Attendance History</h3>
         {loading && (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
+          <div style={{ textAlign: 'center', padding: '40px' }}>
             <div className="spinner" />
-            <p>Loading attendance history...</p>
+            <p style={{ marginTop: '15px', color: 'var(--dark-gray)' }}>Loading attendance history...</p>
           </div>
         )}
         {error && (
-          <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>
+          <div style={{ padding: '40px', color: 'var(--red)', textAlign: 'center', background: '#ffebee', borderRadius: '8px' }}>
             Error: {error}
           </div>
         )}
         {!loading && !error && attendance.length === 0 && (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-            No attendance records found
+          <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+            <Calendar size={64} style={{ color: 'var(--dark-gray)', margin: '0 auto 20px', opacity: 0.3 }} />
+            <p style={{ color: 'var(--dark-gray)', fontSize: '16px' }}>No attendance records found</p>
           </div>
         )}
         {!loading && !error && attendance.length > 0 && (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Time In</th>
-                  <th>Time Out</th>
-                  <th>Hours Worked</th>
-                  <th>Status</th>
-                  <th>Location</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendance.map((record) => (
-                  <tr key={record.id}>
-                    <td>{formatDate(record.timestamp)}</td>
-                    <td>{record.punch_type === 'in' ? formatTime(record.timestamp) : '--'}</td>
-                    <td>{record.punch_type === 'out' ? formatTime(record.timestamp) : '--'}</td>
-                    <td>{record.hoursWorked ? record.hoursWorked.toFixed(2) : '0'}</td>
-                    <td>
-                      <span className={`status-badge ${getStatusBadge(record.displayStatus || 'present')}`}>
-                        {record.displayStatus ? record.displayStatus.charAt(0).toUpperCase() + record.displayStatus.slice(1) : 'Present'}
-                      </span>
-                    </td>
-                    <td>{record.latitude && record.longitude ? `${record.latitude.toFixed(4)}, ${record.longitude.toFixed(4)}` : '--'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {groupedAttendance().map((group: any, idx: number) => (
+              <div key={idx} style={{
+                background: 'var(--light-gray)',
+                borderRadius: '12px',
+                padding: '20px',
+                border: '1px solid #e0e0e0'
+              }}>
+                <h4 style={{
+                  color: 'var(--navy-blue)',
+                  marginBottom: '15px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  <Calendar size={18} />
+                  {new Date(group.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                </h4>
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  {group.records.map((record: any) => (
+                    <div key={record.id} style={{
+                      background: 'white',
+                      borderRadius: '8px',
+                      padding: '15px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        {record.photo_url ? (
+                          <img src={record.photo_url} alt="Punch photo" style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid var(--navy-blue)'
+                          }} />
+                        ) : (
+                          <div style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            background: 'var(--navy-blue)',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '20px',
+                            fontWeight: 'bold'
+                          }}>
+                            {user.full_name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+                            <span style={{
+                              padding: '4px 12px',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              backgroundColor: record.punch_type === 'in' ? '#e8f5e9' : '#fff3e0',
+                              color: record.punch_type === 'in' ? '#2e7d32' : '#e65100',
+                              textTransform: 'uppercase'
+                            }}>
+                              {record.punch_type === 'in' ? 'PUNCH IN' : 'PUNCH OUT'}
+                            </span>
+                            <Clock size={14} style={{ color: 'var(--dark-gray)' }} />
+                            <strong style={{ color: 'var(--navy-blue)', fontSize: '16px' }}>{formatTime(record.timestamp)}</strong>
+                          </div>
+                          {record.latitude && record.longitude && (
+                            <div style={{ fontSize: '12px', color: 'var(--dark-gray)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <MapPin size={12} />
+                              {record.latitude.toFixed(4)}, {record.longitude.toFixed(4)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+                        {(record as any).compliance_status && (
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            backgroundColor:
+                              (record as any).compliance_status === 'on_time' ? '#e8f5e9' :
+                              (record as any).compliance_status === 'late' ? '#fff3e0' : '#f5f5f5',
+                            color:
+                              (record as any).compliance_status === 'on_time' ? '#2e7d32' :
+                              (record as any).compliance_status === 'late' ? '#e65100' : '#666',
+                            textTransform: 'capitalize'
+                          }}>
+                            {((record as any).compliance_status as string).replace('_', ' ')}
+                          </span>
+                        )}
+                        {(record as any).minutes_late > 0 && (
+                          <span style={{ fontSize: '11px', color: '#e65100' }}>
+                            {(record as any).minutes_late} min late
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

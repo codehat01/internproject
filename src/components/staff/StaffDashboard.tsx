@@ -89,10 +89,11 @@ const StaffDashboard: React.FC<StaffDashboardProps> = ({ user }) => {
     try {
       const location = await locationService.getCurrentPosition()
 
-      if (!isWithinGeofence) {
-        showNotification('You must be within the police station premises to punch in/out!', 'error')
-        return
-      }
+      // GEOFENCE VALIDATION COMMENTED OUT - NOW ACCEPTS ANY LOCATION
+      // if (!isWithinGeofence) {
+      //   showNotification('You must be within the police station premises to punch in/out!', 'error')
+      //   return
+      // }
 
       const punchType = isPunchedIn ? 'out' : 'in'
 

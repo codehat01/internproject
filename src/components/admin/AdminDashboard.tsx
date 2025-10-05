@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { Users, Clock, CircleCheck as CheckCircle, CircleAlert as AlertCircle, ChartBar as BarChart3, MapPin, Calendar, Image, TriangleAlert as AlertTriangle } from 'lucide-react'
 import { getDashboardStats, getAllAttendanceLogs, getAllLeaveRequests, updateLeaveRequestStatus } from '../../lib/database'
-import { AdminDashboardProps, Notification, DashboardStats } from '../../types'
+import { Notification, DashboardStats } from '../../types'
+
+interface AdminDashboardProps {
+  user: {
+    id: string;
+    full_name: string;
+    badge_number: string;
+    role: string;
+  };
+  onNavigate?: (section: string) => void;
+}
 
 interface AttendanceLogSummary {
   id: string;
@@ -32,7 +42,7 @@ interface PendingLeaveRequest {
   photo: string;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => {
   const [notification, setNotification] = useState<Notification>({ message: '', type: 'info', show: false })
   const [stats, setStats] = useState<DashboardStats>({
     totalStaff: 0,
@@ -201,47 +211,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         })}
       </div>
 
-      {/* Dashboard Grid */}
-      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '25px', marginBottom: '30px' }}>
-        {/* Daily Attendance Trends */}
-        <div className="card">
-          <h3 className="card-title">Daily Attendance Trends</h3>
-          <div className="chart-container" style={{ height: '200px', display: 'flex', alignItems: 'end', gap: '15px', padding: '20px 0' }}>
-            <div className="chart-bar" style={{ flex: 1, height: '80%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0' }}>
-              Mon
-            </div>
-            <div className="chart-bar" style={{ flex: 1, height: '60%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0' }}>
-              Tue
-            </div>
-            <div className="chart-bar" style={{ flex: 1, height: '70%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0' }}>
-              Wed
-            </div>
-            <div className="chart-bar" style={{ flex: 1, height: '90%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0' }}>
-              Thu
-            </div>
-            <div className="chart-bar highlight" style={{ flex: 1, height: '100%', background: 'var(--golden)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0' }}>
-              Fri
-            </div>
+      {/* Daily Attendance Trends - Full Width */}
+      <div className="card" style={{ marginBottom: '30px' }}>
+        <h3 className="card-title">Daily Attendance Trends</h3>
+        <div className="chart-container" style={{ height: '250px', display: 'flex', alignItems: 'end', gap: '15px', padding: '20px 0' }}>
+          <div className="chart-bar" style={{ flex: 1, height: '80%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-25px', fontSize: '14px', color: 'var(--navy-blue)', fontWeight: 'bold' }}>80%</div>
+            Mon
           </div>
-        </div>
-
-        {/* Leave Request Status */}
-        <div className="card">
-          <h3 className="card-title">Leave Request Status</h3>
-          <div style={{ width: '150px', height: '150px', borderRadius: '50%', background: 'conic-gradient(var(--green) 0deg 262deg, var(--golden) 262deg 298deg, var(--dark-gray) 298deg 360deg)', margin: '0 auto' }}></div>
-          <div style={{ marginTop: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <div style={{ width: '15px', height: '15px', borderRadius: '3px', background: 'var(--green)' }}></div>
-              <span>Approved (73%)</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <div style={{ width: '15px', height: '15px', borderRadius: '3px', background: 'var(--golden)' }}></div>
-              <span>Pending (15%)</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <div style={{ width: '15px', height: '15px', borderRadius: '3px', background: 'var(--dark-gray)' }}></div>
-              <span>Rejected (10%)</span>
-            </div>
+          <div className="chart-bar" style={{ flex: 1, height: '60%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-25px', fontSize: '14px', color: 'var(--navy-blue)', fontWeight: 'bold' }}>60%</div>
+            Tue
+          </div>
+          <div className="chart-bar" style={{ flex: 1, height: '70%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-25px', fontSize: '14px', color: 'var(--navy-blue)', fontWeight: 'bold' }}>70%</div>
+            Wed
+          </div>
+          <div className="chart-bar" style={{ flex: 1, height: '90%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-25px', fontSize: '14px', color: 'var(--navy-blue)', fontWeight: 'bold' }}>90%</div>
+            Thu
+          </div>
+          <div className="chart-bar highlight" style={{ flex: 1, height: '100%', background: 'var(--golden)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-25px', fontSize: '14px', color: 'var(--golden)', fontWeight: 'bold' }}>100%</div>
+            Fri
+          </div>
+          <div className="chart-bar" style={{ flex: 1, height: '85%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-25px', fontSize: '14px', color: 'var(--navy-blue)', fontWeight: 'bold' }}>85%</div>
+            Sat
+          </div>
+          <div className="chart-bar" style={{ flex: 1, height: '45%', background: 'var(--navy-blue)', borderRadius: '5px 5px 0 0', display: 'flex', alignItems: 'end', justifyContent: 'center', color: 'white', fontWeight: 'bold', padding: '10px 0', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '-25px', fontSize: '14px', color: 'var(--navy-blue)', fontWeight: 'bold' }}>45%</div>
+            Sun
           </div>
         </div>
       </div>
@@ -375,34 +375,58 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
         {/* Pending Leave Requests */}
         <div className="card">
-          <h3 className="card-title">Pending Leave Requests</h3>
+          <h3 className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Pending Leave Requests</span>
+            <button
+              className="btn"
+              style={{ background: 'var(--golden)', color: 'white', padding: '8px 16px', fontSize: '14px' }}
+              onClick={() => onNavigate && onNavigate('live-location')}
+            >
+              <MapPin size={16} style={{ marginRight: '5px' }} />
+              View Live Map
+            </button>
+          </h3>
           <div>
-            {pendingLeaveRequests.map((request) => (
-              <div key={request.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', background: 'var(--light-gray)', borderRadius: '10px', marginBottom: '15px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <div className="profile-img">{request.photo}</div>
-                  <div>
-                    <strong>{request.name}</strong><br />
-                    <small style={{ color: 'var(--dark-gray)' }}>{request.dates}</small><br />
-                    <small style={{ color: 'var(--dark-gray)' }}>{request.reason}</small>
+            {pendingLeaveRequests.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--dark-gray)' }}>
+                <CheckCircle size={48} style={{ margin: '0 auto 15px', opacity: 0.3 }} />
+                <p>No pending leave requests</p>
+              </div>
+            ) : (
+              pendingLeaveRequests.map((request) => (
+                <div key={request.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', background: 'var(--light-gray)', borderRadius: '10px', marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
+                    <div className="profile-img" style={{ width: '50px', height: '50px', fontSize: '18px' }}>{request.photo}</div>
+                    <div style={{ flex: 1 }}>
+                      <strong style={{ color: 'var(--navy-blue)', fontSize: '15px' }}>{request.name}</strong>
+                      <div style={{ fontSize: '12px', color: 'var(--dark-gray)', marginTop: '3px' }}>
+                        <Calendar size={12} style={{ display: 'inline', marginRight: '5px' }} />
+                        {request.dates}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--dark-gray)', marginTop: '5px', fontStyle: 'italic' }}>
+                        {request.reason.length > 50 ? request.reason.substring(0, 50) + '...' : request.reason}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                    <button
+                      className="btn btn-success"
+                      onClick={() => handleLeaveAction('approve', request.id, request.name)}
+                      style={{ padding: '8px 16px', fontSize: '13px' }}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => handleLeaveAction('reject', request.id, request.name)}
+                      style={{ padding: '8px 16px', fontSize: '13px' }}
+                    >
+                      Reject
+                    </button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button 
-                    className="btn btn-success" 
-                    onClick={() => handleLeaveAction('approve', request.id, request.name)}
-                  >
-                    Approve
-                  </button>
-                  <button 
-                    className="btn btn-danger" 
-                    onClick={() => handleLeaveAction('reject', request.id, request.name)}
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
