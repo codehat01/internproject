@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Camera, MapPin, Clock, Calendar, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, RefreshCw } from 'lucide-react'
+import { Camera, MapPin, Clock, Calendar, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, RefreshCw, FileText } from 'lucide-react'
 import { getUserAttendance, punchInOut } from '../../lib/database'
 import { AttendanceViewProps, Notification, LocationCoords } from '../../types'
 import { cameraService } from '../../lib/cameraService'
@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase'
 import { geofenceService } from '../../lib/geofenceService'
 import PunchConfirmationDialog from '../shared/PunchConfirmationDialog'
 import { punchStateService } from '../../lib/punchStateService'
+import { pdfExportService } from '../../lib/pdfExportService'
 
 interface AttendanceHistoryRecord {
   date: string;
@@ -379,6 +380,25 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
     }
   }
 
+  const handleExportPDF = (): void => {
+    try {
+      pdfExportService.exportAttendanceReport(
+        attendanceHistory,
+        {
+          full_name: user.full_name,
+          badge_number: user.badge_number,
+          rank: user.rank,
+          department: user.department
+        },
+        'Personal Attendance Report'
+      )
+      showNotification('PDF exported successfully!', 'success')
+    } catch (error) {
+      console.error('Error exporting PDF:', error)
+      showNotification('Failed to export PDF', 'error')
+    }
+  }
+
   return (
     <div>
       <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px', fontSize: '28px', fontWeight: '700' }}>
@@ -488,12 +508,13 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
             <Calendar size={16} style={{ marginRight: '5px' }} />
             View All Records
           </button>
-          <button 
+          <button
             className="btn btn-golden"
-            onClick={() => showNotification('Generating attendance report...', 'info')}
+            onClick={handleExportPDF}
+            disabled={attendanceHistory.length === 0}
           >
-            <Clock size={16} style={{ marginRight: '5px' }} />
-            Generate Report
+            <FileText size={16} style={{ marginRight: '5px' }} />
+            Export PDF
           </button>
         </div>
       </div>

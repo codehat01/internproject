@@ -83,19 +83,34 @@ const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
       {/* Profile Picture */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
         <div style={{ position: 'relative' }}>
-          <div 
-            className="profile-img"
-            style={{
-              width: '80px',
-              height: '80px',
-              background: 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
-              fontSize: '24px',
-              boxShadow: '0 10px 30px rgba(10, 31, 68, 0.3)',
-              border: '4px solid var(--white)'
-            }}
-          >
-            {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-          </div>
+          {user.profile_photo_url ? (
+            <img
+              src={user.profile_photo_url}
+              alt={user.full_name}
+              style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                boxShadow: '0 10px 30px rgba(10, 31, 68, 0.3)',
+                border: '4px solid var(--white)'
+              }}
+            />
+          ) : (
+            <div
+              className="profile-img"
+              style={{
+                width: '80px',
+                height: '80px',
+                background: 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
+                fontSize: '24px',
+                boxShadow: '0 10px 30px rgba(10, 31, 68, 0.3)',
+                border: '4px solid var(--white)'
+              }}
+            >
+              {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+            </div>
+          )}
           {/* Status Indicator */}
           <div 
             style={{

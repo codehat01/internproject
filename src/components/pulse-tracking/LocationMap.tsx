@@ -129,7 +129,9 @@ const LocationMap: React.FC<LocationMapProps> = ({
         borderRadius: '15px',
         overflow: 'hidden',
         border: '2px solid #e9ecef',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+        boxSizing: 'border-box',
+        maxWidth: '100%'
       }}
     />
   );

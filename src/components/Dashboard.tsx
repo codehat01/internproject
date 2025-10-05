@@ -15,6 +15,7 @@ import ShiftManagementView from './admin/ShiftManagementView'
 import LeaveCalendarView from './admin/LeaveCalendarView'
 import EnhancedReportsView from './admin/EnhancedReportsView'
 import GeofenceManagementView from './admin/GeofenceManagementView'
+import SettingsView from './shared/SettingsView'
 import { DashboardProps, Notification, User as UserType } from '../types'
 import { useAttendance } from '../hooks/useAttendance'
 import { useAllAttendance } from '../hooks/useAllAttendance'
@@ -80,6 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         { id: 'user-management', label: 'User Management', icon: Users },
         { id: 'attendance-logs', label: 'Attendance Logs', icon: ClipboardList },
         { id: 'leave-management', label: 'Leave Management', icon: FileText },
+        { id: 'geofence-management', label: 'Geofence Management', icon: MapPin },
         { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
         { id: 'settings', label: 'System Settings', icon: Settings }
       ]
@@ -109,9 +111,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         case 'reports':
           return <EnhancedReportsView userRole={user.role} />
         case 'settings':
-          return <SettingsView user={user} />
+          return <SettingsView userId={user.id} userInfo={user} />
         default:
-          return <AdminDashboard user={user} />
+          return <AdminDashboard user={user} onNavigate={setActiveSection} />
       }
     } else {
       // Staff-only sections
@@ -131,7 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         case 'reports':
           return <ReportsView user={user} />
         case 'settings':
-          return <SettingsView user={user} />
+          return <SettingsView userId={user.id} userInfo={user} />
         default:
           return <StaffDashboard user={user} onNavigate={setActiveSection} />
       }

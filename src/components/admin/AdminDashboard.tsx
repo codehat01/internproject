@@ -66,10 +66,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
       const dashboardStats = await getDashboardStats()
       setStats(dashboardStats)
 
-      // Load recent attendance logs - filter only outside station punches
+      // Load recent attendance logs - show ALL attendance logs
       const allAttendanceLogs = await getAllAttendanceLogs(50)
-      const filteredLogs = allAttendanceLogs.filter(log => (log as any).is_within_geofence === false)
-      const formattedAttendance = filteredLogs.slice(0, 10).map(log => ({
+      const formattedAttendance = allAttendanceLogs.slice(0, 10).map(log => ({
         id: log.id,
         name: log.profiles.full_name,
         badge: log.profiles.badge_number,
@@ -78,7 +77,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
         timeOut: log.punch_type === 'out' ? new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
         location: log.latitude && log.longitude ? `${log.latitude.toFixed(4)}, ${log.longitude.toFixed(4)}` : 'Unknown',
         photo: log.profiles.full_name.split(' ').map(n => n[0]).join(''),
-        photoUrl: log.photo_url || undefined,
+        photoUrl: log.photo_url || log.profiles.profile_photo_url || undefined,
         timestamp: log.timestamp,
         punchType: log.punch_type,
         complianceStatus: (log as any).compliance_status,
@@ -381,6 +380,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
                             }}
                             onClick={() => {
                               if (onNavigate) {
+                                // Store the user_id in sessionStorage so LiveLocationView can filter
+                                sessionStorage.setItem('selectedUserId', record.id)
                                 onNavigate('live-location')
                               }
                             }}

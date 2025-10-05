@@ -54,8 +54,15 @@ const LiveLocationView: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [mapCenter, setMapCenter] = useState<[number, number]>([28.6139, 77.209])
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'present' | 'absent' | 'on_leave'>('all')
+  const [highlightedUserId, setHighlightedUserId] = useState<string | null>(null)
 
   useEffect(() => {
+    const selectedUserId = sessionStorage.getItem('selectedUserId')
+    if (selectedUserId) {
+      setHighlightedUserId(selectedUserId)
+      sessionStorage.removeItem('selectedUserId')
+    }
+
     fetchUserLocations()
 
     const locationsChannel = supabase
@@ -280,12 +287,13 @@ const LiveLocationView: React.FC = () => {
         </div>
       </div>
 
-      <div className="card" style={{ height: '600px', padding: '20px' }}>
-        <MapContainer
-          center={mapCenter}
-          zoom={13}
-          style={{ height: '100%', width: '100%', borderRadius: '10px' }}
-        >
+      <div className="card" style={{ height: '600px', padding: '20px', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <div style={{ height: 'calc(100% - 40px)', width: '100%', borderRadius: '10px', overflow: 'hidden', boxSizing: 'border-box', position: 'relative' }}>
+          <MapContainer
+            center={mapCenter}
+            zoom={13}
+            style={{ height: '100%', width: '100%', maxWidth: '100%', maxHeight: '100%', boxSizing: 'border-box' }}
+          >
           <MapUpdater center={mapCenter} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -343,6 +351,7 @@ const LiveLocationView: React.FC = () => {
             </Marker>
           ))}
         </MapContainer>
+        </div>
       </div>
     </div>
   )
