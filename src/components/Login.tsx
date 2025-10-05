@@ -514,18 +514,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <label className="form-label">Department*</label>
                   <div className="input-wrapper">
                     <Building size={18} className="input-icon" />
-                    <select
+                    <input
+                      type="text"
                       name="department"
                       value={signupData.department}
                       onChange={handleSignupChange}
                       required
                       className="form-input"
+                      placeholder="Your department"
                       style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
-                    >
-                      {DEPARTMENTS.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
 
