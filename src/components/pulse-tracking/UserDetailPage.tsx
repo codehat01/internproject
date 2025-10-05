@@ -163,11 +163,12 @@ const UserDetailPage: React.FC<UserDetailPageProps> = ({ badgeNumber, onBack }) 
             <div style={{
               width: '120px',
               height: '120px',
-              background: 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
+              overflow: 'hidden',
               borderRadius: '20px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              background: 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
               color: 'var(--white)',
               fontSize: '36px',
               fontWeight: 'bold',
