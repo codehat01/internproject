@@ -9,7 +9,7 @@ export interface Profile {
   phone?: string;
   department?: string;
   email?: string; // Add email field
-  avatar_url?: string; // optional avatar image url
+  profile_photo_url?: string;
   created_at: string;
 }
 
@@ -52,7 +52,7 @@ export interface User {
   station_id?: string;
   phone?: string;
   email?: string;
-  avatar_url?: string;
+  profile_photo_url?: string;
 }
 
 export interface LoginFormData {
