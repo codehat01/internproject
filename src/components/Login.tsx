@@ -271,8 +271,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       if (data.user) {
-        const { error: profileError } =.from('profiles')
-          .update({
+        const { error: profileError } =await supabase 
+        .from('profiles')
+        .update({
             email: signupData.email,
             full_name: signupData.fullName,
             badge_number: signupData.badgeNumber,
