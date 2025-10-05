@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { User, LayoutDashboard, Calendar, FileText, History, ChartBar as BarChart3, Settings, LogOut, Users, ClipboardList, TriangleAlert as AlertTriangle, Activity, Video as LucideIcon, MapPin, Clock } from 'lucide-react'
-import ashokPillar from '../assets/ashok-pillar-symbol-icon-blue.webp'
+import ashokPillar from '../assets/dashlogo.png'
 
 import AdminDashboard from './admin/AdminDashboard'
 import StaffDashboard from './staff/StaffDashboard'
