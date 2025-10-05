@@ -9,25 +9,49 @@ import type {
   LeaveStatus
 } from '../types';
 
-// Attendance functions
+export interface EnhancedPunchData {
+  shiftId?: string;
+  complianceStatus?: string;
+  gracePeriodUsed?: boolean;
+  minutesLate?: number;
+  minutesEarly?: number;
+  overtimeMinutes?: number;
+  isWithinGeofence?: boolean;
+  geofenceId?: string;
+}
+
 export const punchInOut = async (
-  userId: string, 
-  punchType: PunchType, 
-  latitude?: number, 
-  longitude?: number, 
-  photoUrl?: string
+  userId: string,
+  punchType: PunchType,
+  latitude?: number,
+  longitude?: number,
+  photoUrl?: string,
+  enhancedData?: EnhancedPunchData
 ): Promise<AttendanceRecord> => {
   try {
+    const insertData: any = {
+      user_id: userId,
+      punch_type: punchType,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      photo_url: photoUrl || null,
+      status: 'active' as const,
+    };
+
+    if (enhancedData) {
+      if (enhancedData.shiftId) insertData.shift_id = enhancedData.shiftId;
+      if (enhancedData.complianceStatus) insertData.compliance_status = enhancedData.complianceStatus;
+      if (enhancedData.gracePeriodUsed !== undefined) insertData.grace_period_used = enhancedData.gracePeriodUsed;
+      if (enhancedData.minutesLate !== undefined) insertData.minutes_late = enhancedData.minutesLate;
+      if (enhancedData.minutesEarly !== undefined) insertData.minutes_early = enhancedData.minutesEarly;
+      if (enhancedData.overtimeMinutes !== undefined) insertData.overtime_minutes = enhancedData.overtimeMinutes;
+      if (enhancedData.isWithinGeofence !== undefined) insertData.is_within_geofence = enhancedData.isWithinGeofence;
+      if (enhancedData.geofenceId) insertData.geofence_id = enhancedData.geofenceId;
+    }
+
     const { data, error } = await supabase
       .from('attendance')
-      .insert([{
-        user_id: userId,
-        punch_type: punchType,
-        latitude: latitude || null,
-        longitude: longitude || null,
-        photo_url: photoUrl || null,
-        status: 'active' as const
-      }] as any)
+      .insert([insertData])
       .select()
       .single();
 
