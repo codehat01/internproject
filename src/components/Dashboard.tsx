@@ -158,8 +158,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             />
           </div>
           <div className="header-title-container">
-            <span className="header-title">POLICE ATTENDANCE</span>
-            <span className="header-subtitle">SYSTEM</span>
+            <span className="header-title">PULSE-T4 Maduravoyal</span>
+            <span className="header-subtitle">police station</span>
           </div>
         </div>
         <div className="header-right">
