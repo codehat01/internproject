@@ -5,6 +5,7 @@ import { sanitizeInput, rateLimiter, logSecurityEvent, SECURITY_CONFIG } from '.
 import { LoginFormData, LoginProps, Notification, User as UserType } from '../types'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
+import ashokPillar from '../assets/dashlogo.png'
 
 const RANKS = ['Constable', 'Head Constable', 'Sub Inspector']
 const DEPARTMENTS = ['General', 'Traffic', 'Investigation', 'Patrol', 'Administration', 'Cyber Crime', 'Special Branch']
@@ -324,10 +325,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="login-card">
         <div className="login-header">
           <div className="login-emblem">
-            <Shield size={32} />
+            <img 
+              src={ashokPillar} 
+              alt="Police Emblem" 
+              style={{ width: '80px', height: '80px' }}
+            />
           </div>
-          <h2 className="login-title">POLICE ATTENDANCE SYSTEM</h2>
-          <p className="login-subtitle">Secure government attendance and reporting</p>
+          <h2 className="login-title">T4 Maduravoyal Police Station  </h2>
+          <p className="login-subtitle">Security Management System </p>
         </div>
 
         <div style={{ position: 'relative', overflow: 'hidden', minHeight: '500px' }}>

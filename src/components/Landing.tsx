@@ -37,12 +37,12 @@ const Landing: React.FC<Props> = ({ onEnter }) => {
       <div className="landing-content">
         {/* Hollow Text Title */}
         <h1 className="landing-hollow-title">
-          POLICE ATTENDANCE SYSTEM
+          T4 Maduravoyal Police Station 
         </h1>
         
         {/* Subtitle */}
         <p className="landing-subtitle">
-          Secure Digital Attendance Management Portal
+          Secure Digital Management Portal
         </p>
         
         {/* Enter Button */}
