@@ -436,7 +436,7 @@ body {
   top: 80px;
   height: calc(100vh - 80px);
   overflow-y: auto;
-  z-index: 90;
+  z-index: 1200;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
 }
@@ -505,7 +505,7 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 80;
+  z-index: 1100;
   display: none;
 }
 
