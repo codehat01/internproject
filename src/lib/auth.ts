@@ -176,16 +176,9 @@ export const transformProfileToUser = (profile: Profile, email?: string): User =
 };
 
 
-/**
- * Validates and normalizes a badge number
- * @param badgeNumber The badge number to validate
- * @returns The normalized badge number in UPPERCASE if valid, or false if invalid
- */
 export const validateBadgeNumber = (badgeNumber: string): string | false => {
-  // Basic validation - just check length and trim
   const normalizedBadge = badgeNumber.trim();
   
-  // Minimum 3 characters, maximum 50 characters
   if (normalizedBadge.length >= 3 && normalizedBadge.length <= 50) {
     return normalizedBadge.toUpperCase();
   }
