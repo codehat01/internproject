@@ -60,7 +60,6 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
     }, 1000)
 
     checkPermissions()
-    loadAttendanceHistory()
 
     const initializePunchState = async () => {
       await punchStateService.initialize(user.id)
