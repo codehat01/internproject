@@ -149,25 +149,67 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
 
   const handlePunch = async (): Promise<void> => {
     try {
-      const location = await locationService.getCurrentPosition()
+      if (!location) {
+        showNotification('Location access required for attendance!', 'error')
+        const hasPermission = await requestLocationPermission()
+        if (!hasPermission) return
+      }
 
       const punchType = isPunchedIn ? 'out' : 'in'
 
-      const hasPermission = await cameraService.requestPermission()
-      if (!hasPermission) {
-        showNotification('Camera permission is required for attendance!', 'error')
-        return
+      if (!cameraPermission) {
+        const hasPermission = await cameraService.requestPermission()
+        if (!hasPermission) {
+          showNotification('Camera permission is required for attendance!', 'error')
+          return
+        }
+        setCameraPermission(true)
       }
 
       showNotification('Please position your face in the camera...', 'info')
+
       const photoDataUrl = await cameraService.capturePhotoWithPreview()
+
+      if (!location) {
+        showNotification('Location not available. Please try again.', 'error')
+        return
+      }
+
+      const geofenceResult = await geofenceService.validateLocation(
+        location.latitude,
+        location.longitude
+      )
+      setCurrentGeofenceStatus(geofenceResult.isValid ? 'Inside Station' : 'Outside Station')
+
+      setCapturedPhoto(photoDataUrl)
+      setPendingPunchType(punchType)
+      setShowConfirmDialog(true)
+
+    } catch (error: any) {
+      console.error('Error in handlePunch:', error)
+      if (error.message === 'User cancelled photo capture') {
+        showNotification('Photo capture cancelled', 'info')
+      } else {
+        showNotification('Failed to capture photo. Please try again.', 'error')
+      }
+    }
+  }
+
+  const handleConfirmPunch = async (): Promise<void> => {
+    try {
+      if (!capturedPhoto || !location) {
+        showNotification('Missing photo or location data.', 'error')
+        return
+      }
+
+      const punchType = pendingPunchType
 
       const geofenceResult = await geofenceService.validateLocation(
         location.latitude,
         location.longitude
       )
 
-      const enhancedData: any = {
+      let enhancedData: any = {
         isWithinGeofence: geofenceResult.isValid,
         geofenceId: geofenceResult.geofence?.id || null,
       }
@@ -181,7 +223,7 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
         punchType,
         location.latitude,
         location.longitude,
-        photoDataUrl,
+        capturedPhoto,
         enhancedData
       )
 
@@ -189,27 +231,73 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
 
       await punchStateService.updatePunchState(user.id, punchType)
 
-      const currentTime = new Date().toLocaleTimeString()
-      setPunchTime(currentTime)
-
       const action = punchType === 'in' ? 'Punched In' : 'Punched Out'
       showNotification(
-        `${action} successfully at ${currentTime}!`,
+        `${action} successfully at ${currentTime.toLocaleTimeString()}!`,
         'success'
       )
 
-      loadStaffData()
-      // loadShiftData() // SHIFT MANAGEMENT DISABLED
+      setShowConfirmDialog(false)
+      setCapturedPhoto(null)
+      loadAttendanceHistory()
     } catch (error: any) {
-      console.error('Error punching in/out:', error)
+      console.error('Error confirming punch:', error)
+      showNotification('Failed to record attendance. Please try again.', 'error')
+    }
+  }
+
+  const handleRetakePhoto = async (): Promise<void> => {
+    try {
+      showNotification('Please position your face in the camera...', 'info')
+      const photoDataUrl = await cameraService.capturePhotoWithPreview()
+      setCapturedPhoto(photoDataUrl)
+      showNotification('Photo captured! Review and confirm.', 'success')
+    } catch (error: any) {
+      console.error('Error retaking photo:', error)
       if (error.message === 'User cancelled photo capture') {
         showNotification('Photo capture cancelled', 'info')
       } else {
-        showNotification('Failed to record attendance. Please try again.', 'error')
+        showNotification('Failed to capture photo. Please try again.', 'error')
       }
     }
   }
 
+  const handleCancelPunch = (): void => {
+    setShowConfirmDialog(false)
+    setCapturedPhoto(null)
+    showNotification('Punch cancelled', 'info')
+  }
+
+  const requestLocationPermission = async (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            })
+            setLocationPermission(true)
+            resolve(true)
+          },
+          (error) => {
+            console.error('Error getting location:', error)
+            showNotification('Please enable location services', 'error')
+            resolve(false)
+          }
+        )
+      } else {
+        showNotification('Geolocation is not supported by your browser', 'error')
+        resolve(false)
+      }
+    })
+  }
+
+  const checkPermissions = async () => {
+  }
+
+  
+  
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
