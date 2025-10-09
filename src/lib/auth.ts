@@ -6,8 +6,16 @@ import type { Database } from '../types/database';
 
 export const getEmailFromBadge = async (badgeNumber: string): Promise<string | null> => {
   try {
+    
+    const trimmedBadge = badgeNumber.trim();
+    if (trimmedBadge.length < 3 || trimmedBadge.length > 50) {
+      console.error('Invalid badge number length');
+      return null;
+    }
+
+    
     const { data, error } = await supabase.rpc('get_email_from_badge', {
-      badge_num: badgeNumber.toUpperCase()
+      badge_num: trimmedBadge
     } as any);
 
     if (error) {
@@ -167,10 +175,21 @@ export const transformProfileToUser = (profile: Profile, email?: string): User =
   };
 };
 
-export const validateBadgeNumber = (badgeNumber: string): boolean => {
-  // Badge number should be alphanumeric and at least 3 characters
-  const badgeRegex = /^[A-Z0-9]{3,}$/;
-  return badgeRegex.test(badgeNumber.toUpperCase());
+
+/**
+ * Validates and normalizes a badge number
+ * @param badgeNumber The badge number to validate
+ * @returns The normalized badge number in UPPERCASE if valid, or false if invalid
+ */
+export const validateBadgeNumber = (badgeNumber: string): string | false => {
+  // Basic validation - just check length and trim
+  const normalizedBadge = badgeNumber.trim();
+  
+  // Minimum 3 characters, maximum 50 characters
+  if (normalizedBadge.length >= 3 && normalizedBadge.length <= 50) {
+    return normalizedBadge.toUpperCase();
+  }
+  return false;
 };
 
 export const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
