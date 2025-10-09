@@ -121,6 +121,25 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   const handleRefreshLocation = async () => {
   }
 
+    const handleExportPDF = (): void => {
+    try {
+      pdfExportService.exportAttendanceReport(
+        attendanceHistory,
+        {
+          full_name: user.full_name,
+          badge_number: user.badge_number,
+          rank: user.rank,
+          department: user.department
+        },
+        'Personal Attendance Report'
+      )
+      showNotification('PDF exported successfully!', 'success')
+    } catch (error) {
+      console.error('Error exporting PDF:', error)
+      showNotification('Failed to export PDF', 'error')
+    }
+  }
+
   const showNotification = (message: string, type: Notification['type']): void => {
     setNotification({ message, type, show: true })
     setTimeout(() => {
