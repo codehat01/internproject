@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Clock, Calendar, FileText, CircleCheck as CheckCircle, Circle as XCircle, CircleAlert as AlertCircle } from 'lucide-react'
+import { Clock, Calendar, FileText, CircleCheck as CheckCircle, Circle as XCircle, CircleAlert as AlertCircle , Camera, MapPin, TriangleAlert as AlertTriangle,  RefreshCw } from 'lucide-react'
 import { getUserAttendanceSummary, getUserLeaveRequests, punchInOut } from '../../lib/database'
 import { StaffDashboardProps, Notification, AttendanceSummary } from '../../types'
 import { cameraService } from '../../lib/cameraService'
