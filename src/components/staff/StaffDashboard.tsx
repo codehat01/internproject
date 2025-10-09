@@ -40,7 +40,7 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   const [currentTime, setCurrentTime] = useState<Date>(new Date())
   const [location, setLocation] = useState<LocationCoords | null>(null)
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceHistoryRecord[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+  
   const [cameraPermission, setCameraPermission] = useState<boolean>(false)
   const [locationPermission, setLocationPermission] = useState<boolean>(false)
   const [currentShift, setCurrentShift] = useState<Shift | null>(null)
