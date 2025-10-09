@@ -47,7 +47,6 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   const [upcomingShift, setUpcomingShift] = useState<Shift | null>(null)
   const [gracePeriodMinutes, setGracePeriodMinutes] = useState<number>(0)
   const [currentGeofenceStatus, setCurrentGeofenceStatus] = useState<string>('Outside Station')
-  const [isWithinGeofence, setIsWithinGeofence] = useState<boolean>(false)
   const [lastPunchInTime, setLastPunchInTime] = useState<Date | null>(null)
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
