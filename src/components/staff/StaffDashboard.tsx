@@ -118,6 +118,8 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
       setLoading(false)
     }
   }
+  const handleRefreshLocation = async () => {
+  }
 
   const showNotification = (message: string, type: Notification['type']): void => {
     setNotification({ message, type, show: true })
