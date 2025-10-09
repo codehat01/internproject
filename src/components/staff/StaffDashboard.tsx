@@ -36,7 +36,7 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   const [isWithinGeofence, setIsWithinGeofence] = useState<boolean>(false)
   const [lastPunchInTime, setLastPunchInTime] = useState<Date | null>(null)
 
-    const [isPunchedIn, setIsPunchedIn] = useState<boolean>(false)
+  
   const [currentTime, setCurrentTime] = useState<Date>(new Date())
   const [location, setLocation] = useState<LocationCoords | null>(null)
   const [notification, setNotification] = useState<Notification>({ message: '', type: 'info', show: false })
