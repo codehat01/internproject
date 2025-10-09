@@ -187,74 +187,117 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
         Staff Dashboard
       </h2>
 
-      {/* Quick Actions */}
-      <div className="quick-actions-grid">
-        {/* Punch In/Out Card */}
-        <div className="card punch-card">
-          <h3 className="card-title">Attendance</h3>
-          <div 
-            className="punch-button" 
-            onClick={handlePunch}
-            style={{
-              width: '150px',
-              height: '150px',
-              borderRadius: '50%',
-              background: isPunchedIn 
-                ? 'linear-gradient(135deg, var(--green), #2ecc71)' 
-                : 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
-              border: `6px solid ${isPunchedIn ? 'var(--green)' : 'var(--golden)'}`,
-              color: 'var(--white)',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              margin: '20px auto',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-            }}
-          >
-            <div>
-              {isPunchedIn ? (
-                <>
-                  <div>Punched In</div>
-                  <div style={{ fontSize: '14px', marginTop: '5px' }}>{punchTime || lastPunchInTime?.toLocaleTimeString()}</div>
-                  <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Punch Out</div>
-                </>
-              ) : (
-                <>
-                  <div>Punch In</div>
-                  <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Start</div>
-                </>
-              )}
-            </div>
+      {/* Punch In/Out Section */}
+      <div className="card" style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <h3 className="card-title">Punch In / Punch Out</h3>
+
+        {/* Current Time Display */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--navy-blue)' }}>
+            {currentTime.toLocaleTimeString()}
           </div>
-          <p style={{ color: 'var(--dark-gray)', fontSize: '14px' }}>
-            Click to punch in/out. Location and photo verification required.
-          </p>
+          <div style={{ color: 'var(--dark-gray)' }}>
+            {currentTime.toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </div>
         </div>
 
-        {/* Quick Leave Request */}
-        <div className="card quick-actions-card">
-          <h3 className="card-title">Quick Actions</h3>
-          <div className="quick-actions-buttons">
-            <button
-              className="btn btn-golden action-btn"
-              onClick={() => onNavigate && onNavigate('leave-requests')}
-            >
-              <FileText size={20} />
-              Submit Leave Request
-            </button>
-            <button
-              className="btn btn-primary action-btn"
-              onClick={() => onNavigate && onNavigate('attendance-history')}
-            >
-              <Calendar size={20} />
-              View Attendance History
-            </button>
+        {/* Punch Button */}
+        <div 
+          className="punch-button" 
+          onClick={handlePunch}
+          style={{
+            width: '200px',
+            height: '200px',
+            borderRadius: '50%',
+            background: isPunchedIn 
+              ? 'linear-gradient(135deg, var(--green), #2ecc71)' 
+              : 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
+            border: `8px solid ${isPunchedIn ? 'var(--green)' : 'var(--golden)'}`,
+            color: 'var(--white)',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            margin: '20px auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+          }}
+        >
+          <div>
+            {isPunchedIn ? (
+              <>
+                <Camera size={24} style={{ marginBottom: '10px' }} />
+                <div>Punched In</div>
+                <div style={{ fontSize: '14px', marginTop: '5px' }}>
+                  {lastPunchInTime ? lastPunchInTime.toLocaleTimeString() : currentTime.toLocaleTimeString()}
+                </div>
+                <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Punch Out</div>
+              </>
+            ) : (
+              <>
+                <Camera size={24} style={{ marginBottom: '10px' }} />
+                <div>Punch In</div>
+                <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Start</div>
+              </>
+            )}
           </div>
+        </div>
+
+        {/* Location and Geofence Status */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <MapPin size={16} style={{ color: location ? 'var(--green)' : 'var(--red)' }} />
+            <span style={{ color: location ? 'var(--green)' : 'var(--red)', fontSize: '14px' }}>
+              {location ? 'Location detected' : 'Location not available'}
+            </span>
+          </div>
+          {location && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {isWithinGeofence ? (
+                <CheckCircle size={16} style={{ color: 'var(--green)' }} />
+              ) : (
+                <AlertTriangle size={16} style={{ color: 'var(--red)' }} />
+              )}
+              <span style={{ color: isWithinGeofence ? 'var(--green)' : 'var(--red)', fontSize: '14px' }}>
+                {isWithinGeofence ? 'Inside geofence boundary' : 'Outside geofence boundary'}
+              </span>
+            </div>
+          )}
+          <button
+            className="btn btn-secondary"
+            onClick={handleRefreshLocation}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', padding: '8px 16px' }}
+          >
+            <RefreshCw size={16} />
+            Refresh Location
+          </button>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
+          <button 
+            className="btn btn-primary"
+            onClick={() => showNotification('Opening detailed attendance view...', 'info')}
+          >
+            <Calendar size={16} style={{ marginRight: '5px' }} />
+            View All Records
+          </button>
+          <button
+            className="btn btn-golden"
+            onClick={handleExportPDF}
+            disabled={attendanceHistory.length === 0}
+          >
+            <FileText size={16} style={{ marginRight: '5px' }} />
+            Export PDF
+          </button>
         </div>
       </div>
 
