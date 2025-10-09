@@ -146,8 +146,8 @@ const PunchConfirmationDialog: React.FC<PunchConfirmationDialogProps> = ({
                   </div>
                 </div>
                 {geofenceStatus && (
-                  <div style={{ marginTop: '15px', padding: '10px', backgroundColor: geofenceStatus === 'Inside station' ? '#d4edda' : '#fff3cd', borderRadius: '5px', border: `1px solid ${geofenceStatus === 'Inside station' ? '#c3e6cb' : '#ffc107'}` }}>
-                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: geofenceStatus === 'Inside station' ? '#155724' : '#856404', textAlign: 'center' }}>
+                  <div style={{ marginTop: '15px', padding: '10px', backgroundColor: geofenceStatus === 'Inside Station' ? '#d4edda' : '#fff3cd', borderRadius: '5px', border: `1px solid ${geofenceStatus === 'Inside Station' ? '#c3e6cb' : '#ffc107'}` }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: geofenceStatus === 'Inside Station' ? '#155724' : '#856404', textAlign: 'center' }}>
                       Status: {geofenceStatus}
                     </div>
                   </div>

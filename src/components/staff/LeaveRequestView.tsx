@@ -341,39 +341,6 @@ const LeaveRequestView: React.FC<LeaveRequestViewProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Leave Policy Information */}
-      <div className="card" style={{ background: '#fff8e1', border: '1px solid var(--golden)' }}>
-        <h3 className="card-title" style={{ color: 'var(--golden)' }}>
-          Leave Policy Guidelines
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-          <div>
-            <h4 style={{ color: 'var(--navy-blue)', marginBottom: '10px' }}>Annual Leave</h4>
-            <ul style={{ color: 'var(--dark-gray)', lineHeight: '1.6' }}>
-              <li>30 days per year</li>
-              <li>Can be carried forward (max 10 days)</li>
-              <li>Requires 7 days advance notice</li>
-            </ul>
-          </div>
-          <div>
-            <h4 style={{ color: 'var(--navy-blue)', marginBottom: '10px' }}>Sick Leave</h4>
-            <ul style={{ color: 'var(--dark-gray)', lineHeight: '1.6' }}>
-              <li>15 days per year</li>
-              <li>Medical certificate required (3 days)</li>
-              <li>Can be taken without advance notice</li>
-            </ul>
-          </div>
-          <div>
-            <h4 style={{ color: 'var(--navy-blue)', marginBottom: '10px' }}>Emergency Leave</h4>
-            <ul style={{ color: 'var(--dark-gray)', lineHeight: '1.6' }}>
-              <li>5 days per year</li>
-              <li>For family emergencies</li>
-              <li>Requires documentation</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
       {/* Notification */}
       <div className={`notification ${notification.type} ${notification.show ? 'show' : ''}`}>
         {notification.message}

@@ -7,7 +7,7 @@ import type { Database } from '../types/database';
 export const getEmailFromBadge = async (badgeNumber: string): Promise<string | null> => {
   try {
     const { data, error } = await supabase.rpc('get_email_from_badge', {
-      badge_num: badgeNumber
+      badge_num: badgeNumber.toUpperCase()
     } as any);
 
     if (error) {

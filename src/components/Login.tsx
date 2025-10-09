@@ -23,6 +23,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isBlocked, setIsBlocked] = useState<boolean>(false)
   const [blockTimeRemaining, setBlockTimeRemaining] = useState<number>(0)
   const [showSignup, setShowSignup] = useState<boolean>(false)
+  const [showForgotPassword, setShowForgotPassword] = useState<boolean>(false)
+  const [resetEmail, setResetEmail] = useState<string>('')
 
   const [signupData, setSignupData] = useState({
     badgeNumber: '',
@@ -108,11 +110,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       logSecurityEvent('login_attempt', 'authentication', undefined, {
-        badgeNumber: sanitizedBadgeId,
+        badgeNumber: sanitizedBadgeId.toUpperCase(),
         timestamp: new Date().toISOString()
       });
 
-      const result = await signInWithBadge(sanitizedBadgeId, sanitizedPassword)
+      const result = await signInWithBadge(sanitizedBadgeId.toUpperCase(), sanitizedPassword)
 
       if (!result || result.error) {
         setLoginAttempts(prev => prev + 1);
@@ -244,7 +246,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       let photoUrl = null
       if (signupData.profilePhoto) {
         const fileExt = signupData.profilePhoto.name.split('.').pop()
-        const fileName = `${signupData.badgeNumber}-${Date.now()}.${fileExt}`
+        const fileName = `${signupData.badgeNumber.toUpperCase()}-${Date.now()}.${fileExt}`
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('profile-photos')
@@ -272,12 +274,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       if (data.user) {
-        const { error: profileError } =await supabase 
+        const { error: profileError } =await supabase
         .from('profiles')
         .update({
             email: signupData.email,
             full_name: signupData.fullName,
-            badge_number: signupData.badgeNumber,
+            badge_number: signupData.badgeNumber.toUpperCase(),
             rank: signupData.rank,
             role: 'staff',
             department: signupData.department,
@@ -320,6 +322,44 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setShowPassword(!showPassword);
   }
 
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      if (!resetEmail) {
+        showNotification('Please enter your email address', 'error')
+        setLoading(false)
+        return
+      }
+
+      if (!resetEmail.endsWith('@gmail.com')) {
+        showNotification('Please enter a valid Gmail address', 'error')
+        setLoading(false)
+        return
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+
+      if (error) {
+        showNotification(error.message, 'error')
+      } else {
+        showNotification('Password reset link sent to your email!', 'success')
+        setTimeout(() => {
+          setShowForgotPassword(false)
+          setResetEmail('')
+        }, 2000)
+      }
+    } catch (error: any) {
+      console.error('Password reset error:', error)
+      showNotification('Failed to send reset email. Please try again.', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="login-container">
       <div className="login-card">
@@ -339,12 +379,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div
             style={{
               display: 'flex',
-              width: '200%',
-              transform: showSignup ? 'translateX(-50%)' : 'translateX(0)',
+              width: '300%',
+              transform: showForgotPassword ? 'translateX(-66.66%)' : showSignup ? 'translateX(-33.33%)' : 'translateX(0)',
               transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
-            <div style={{ width: '50%', padding: '0 10px' }}>
+            <div style={{ width: '33.33%', padding: '0 10px' }}>
               <h3 style={{ color: 'var(--navy-blue)', marginBottom: '20px', fontSize: '20px', fontWeight: '700', textAlign: 'center' }}>Login</h3>
               <form onSubmit={handleSubmit} className="login-form">
                 <div className="form-group">
@@ -393,6 +433,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   {isBlocked ? `Blocked (${Math.ceil(blockTimeRemaining/60)}m)` : loading ? 'Logging in...' : 'LOGIN'}
                 </button>
 
+                <div style={{ textAlign: 'center', marginTop: '15px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    style={{ background: 'none', border: 'none', color: 'var(--navy-blue)', textDecoration: 'underline', cursor: 'pointer', fontSize: '14px' }}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
                 <div style={{ textAlign: 'center', margin: '20px 0' }}>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                     <div style={{ flex: 1, height: '1px', background: 'var(--dark-gray)' }}></div>
@@ -412,7 +462,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </form>
             </div>
 
-            <div style={{ width: '50%', padding: '0 10px' }}>
+            <div style={{ width: '33.33%', padding: '0 10px' }}>
               <h3 style={{ color: 'var(--navy-blue)', marginBottom: '20px', fontSize: '20px', fontWeight: '700', textAlign: 'center' }}>Create Account</h3>
               <form onSubmit={handleSignupSubmit} style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}>
                 <div className="form-group" style={{ marginBottom: '15px' }}>
@@ -624,6 +674,52 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <button
                   type="button"
                   onClick={() => setShowSignup(false)}
+                  className="btn btn-secondary"
+                  style={{ width: '100%' }}
+                >
+                  Back to Login
+                </button>
+              </form>
+            </div>
+
+            <div style={{ width: '33.33%', padding: '0 10px' }}>
+              <h3 style={{ color: 'var(--navy-blue)', marginBottom: '20px', fontSize: '20px', fontWeight: '700', textAlign: 'center' }}>Reset Password</h3>
+              <form onSubmit={handleForgotPassword}>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label">Email Address*</label>
+                  <div className="input-wrapper">
+                    <Mail size={18} className="input-icon" />
+                    <input
+                      type="email"
+                      name="resetEmail"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(sanitizeInput(e.target.value))}
+                      required
+                      className="form-input"
+                      placeholder="yourname@gmail.com"
+                      style={{ fontSize: '14px', padding: '10px 10px 10px 40px' }}
+                    />
+                  </div>
+                  <small style={{ color: 'var(--dark-gray)', fontSize: '12px', marginTop: '5px', display: 'block' }}>
+                    Enter your registered email address to receive a password reset link.
+                  </small>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="login-btn"
+                  style={{ marginBottom: '10px' }}
+                >
+                  {loading ? 'Sending...' : 'Send Reset Link'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false)
+                    setResetEmail('')
+                  }}
                   className="btn btn-secondary"
                   style={{ width: '100%' }}
                 >

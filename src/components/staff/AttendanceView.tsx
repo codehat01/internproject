@@ -32,7 +32,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
   const [currentShift, setCurrentShift] = useState<Shift | null>(null)
   const [upcomingShift, setUpcomingShift] = useState<Shift | null>(null)
   const [gracePeriodMinutes, setGracePeriodMinutes] = useState<number>(0)
-  const [currentGeofenceStatus, setCurrentGeofenceStatus] = useState<string>('Outside station')
+  const [currentGeofenceStatus, setCurrentGeofenceStatus] = useState<string>('Outside Station')
   const [isWithinGeofence, setIsWithinGeofence] = useState<boolean>(false)
   const [lastPunchInTime, setLastPunchInTime] = useState<Date | null>(null)
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null)
@@ -106,7 +106,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
   const checkGeofence = async (latitude: number, longitude: number) => {
     const result = await geofenceService.validateLocation(latitude, longitude)
     setIsWithinGeofence(result.isValid)
-    setCurrentGeofenceStatus(result.isValid ? 'Inside station' : 'Outside station')
+    setCurrentGeofenceStatus(result.isValid ? 'Inside Station' : 'Outside Station')
     return result
   }
 
@@ -122,9 +122,9 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
       await locationService.updateLocationInDatabase(currentLocation, true)
 
       if (result.isValid) {
-        showNotification('Location updated: Inside geofence boundary', 'success')
+        showNotification('Location updated: Inside station boundary', 'success')
       } else {
-        showNotification('Location updated: Outside geofence boundary', 'error')
+        showNotification('Location updated: Outside station boundary', 'error')
       }
     } catch (error) {
       console.error('Error refreshing location:', error)
@@ -172,7 +172,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
 
         if (record.punch_type === 'in') {
           groupedAttendance[date].timeIn = new Date(record.timestamp).toLocaleTimeString()
-          groupedAttendance[date].geofenceStatus = record.is_within_geofence ? 'Inside station' : 'Outside station'
+          groupedAttendance[date].geofenceStatus = record.is_within_geofence ? 'Inside Station' : 'Outside Station'
           groupedAttendance[date].location = record.latitude && record.longitude ? 'Recorded' : 'Unknown'
         } else if (record.punch_type === 'out') {
           groupedAttendance[date].timeOut = new Date(record.timestamp).toLocaleTimeString()
@@ -252,7 +252,7 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         location.latitude,
         location.longitude
       )
-      setCurrentGeofenceStatus(geofenceResult.isValid ? 'Inside station' : 'Outside station')
+      setCurrentGeofenceStatus(geofenceResult.isValid ? 'Inside Station' : 'Outside Station')
 
       setCapturedPhoto(photoDataUrl)
       setPendingPunchType(punchType)
@@ -405,120 +405,6 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
         Attendance
       </h2>
 
-      {/* Punch In/Out Section */}
-      <div className="card" style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <h3 className="card-title">Punch In / Punch Out</h3>
-
-        {/* Current Time Display */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--navy-blue)' }}>
-            {currentTime.toLocaleTimeString()}
-          </div>
-          <div style={{ color: 'var(--dark-gray)' }}>
-            {currentTime.toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </div>
-        </div>
-
-        {/* Punch Button */}
-        <div 
-          className="punch-button" 
-          onClick={handlePunch}
-          style={{
-            width: '200px',
-            height: '200px',
-            borderRadius: '50%',
-            background: isPunchedIn 
-              ? 'linear-gradient(135deg, var(--green), #2ecc71)' 
-              : 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
-            border: `8px solid ${isPunchedIn ? 'var(--green)' : 'var(--golden)'}`,
-            color: 'var(--white)',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            margin: '20px auto',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-          }}
-        >
-          <div>
-            {isPunchedIn ? (
-              <>
-                <Camera size={24} style={{ marginBottom: '10px' }} />
-                <div>Punched In</div>
-                <div style={{ fontSize: '14px', marginTop: '5px' }}>
-                  {lastPunchInTime ? lastPunchInTime.toLocaleTimeString() : currentTime.toLocaleTimeString()}
-                </div>
-                <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Punch Out</div>
-              </>
-            ) : (
-              <>
-                <Camera size={24} style={{ marginBottom: '10px' }} />
-                <div>Punch In</div>
-                <div style={{ fontSize: '12px', marginTop: '3px', opacity: 0.8 }}>Click to Start</div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Location and Geofence Status */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <MapPin size={16} style={{ color: location ? 'var(--green)' : 'var(--red)' }} />
-            <span style={{ color: location ? 'var(--green)' : 'var(--red)', fontSize: '14px' }}>
-              {location ? 'Location detected' : 'Location not available'}
-            </span>
-          </div>
-          {location && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {isWithinGeofence ? (
-                <CheckCircle size={16} style={{ color: 'var(--green)' }} />
-              ) : (
-                <AlertTriangle size={16} style={{ color: 'var(--red)' }} />
-              )}
-              <span style={{ color: isWithinGeofence ? 'var(--green)' : 'var(--red)', fontSize: '14px' }}>
-                {isWithinGeofence ? 'Inside geofence boundary' : 'Outside geofence boundary'}
-              </span>
-            </div>
-          )}
-          <button
-            className="btn btn-secondary"
-            onClick={handleRefreshLocation}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', padding: '8px 16px' }}
-          >
-            <RefreshCw size={16} />
-            Refresh Location
-          </button>
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
-          <button 
-            className="btn btn-primary"
-            onClick={() => showNotification('Opening detailed attendance view...', 'info')}
-          >
-            <Calendar size={16} style={{ marginRight: '5px' }} />
-            View All Records
-          </button>
-          <button
-            className="btn btn-golden"
-            onClick={handleExportPDF}
-            disabled={attendanceHistory.length === 0}
-          >
-            <FileText size={16} style={{ marginRight: '5px' }} />
-            Export PDF
-          </button>
-        </div>
-      </div>
-
       {/* Attendance History */}
       <div className="card">
         <h3 className="card-title">Recent Attendance History</h3>
@@ -557,23 +443,6 @@ const AttendanceView: React.FC<AttendanceViewProps> = ({ user }) => {
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* Instructions */}
-      <div className="card" style={{ background: '#e3f2fd', border: '1px solid var(--navy-blue)' }}>
-        <h3 className="card-title" style={{ color: 'var(--navy-blue)' }}>
-          Attendance Instructions
-        </h3>
-        <ul style={{ color: 'var(--dark-gray)', lineHeight: '1.6' }}>
-          <li>Photo verification is required for each punch</li>
-          <li>Ensure your location services are enabled for accurate tracking</li>
-          <li>Punch in at least once per day to be marked as Present</li>
-          <li>If you do not punch in on a day, you will be marked as Absent</li>
-          <li>Review your photo and location before confirming</li>
-          <li>You can retake your photo if needed</li>
-          <li>Location status (Inside/Outside station) will be recorded with each punch</li>
-          <li>Toggle between Punch In and Punch Out throughout your work day</li>
-        </ul>
       </div>
 
       {/* Notification */}
