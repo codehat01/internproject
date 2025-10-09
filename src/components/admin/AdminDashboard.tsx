@@ -356,7 +356,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
                             gap: '2px'
                           }}>
                             <MapPin size={10} />
-                            {record.isWithinGeofence ? 'Inside fence' : 'Outside fence'}
+                            {record.isWithinGeofence ? 'Inside Station' : 'Outside Station'}
                           </small>
                         )}
                       </div>
