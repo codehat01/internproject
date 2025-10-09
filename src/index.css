@@ -804,13 +804,13 @@ body {
 
 /* Punch Button */
 .punch-button {
-  width: 180px;
-  height: 180px;
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--navy-blue), #0f2951);
-  border: 6px solid var(--golden);
+  border: 8px solid var(--golden);
   color: var(--white);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
   cursor: pointer;
   margin: 20px auto;
@@ -818,13 +818,38 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  position: relative;
+}
+
+.punch-button::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  padding: 8px;
+  background: linear-gradient(135deg, var(--golden), #b8941f);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.punch-button:hover::before {
+  opacity: 1;
 }
 
 .punch-button:hover {
   transform: scale(1.05);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+.punch-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* Notifications */
@@ -894,9 +919,15 @@ body {
   }
   
   .punch-button {
-    width: 150px;
-    height: 150px;
-    font-size: 14px;
+    width: 180px;
+    height: 180px;
+    font-size: 16px;
+    border-width: 6px;
+  }
+
+  .punch-button::before {
+    inset: -6px;
+    padding: 6px;
   }
   
   .notification {
@@ -1086,13 +1117,25 @@ body {
   .attendance-summary-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .summary-item {
     padding: 18px 12px;
   }
-  
+
   .summary-number {
     font-size: 24px;
+  }
+
+  .punch-button {
+    width: 160px;
+    height: 160px;
+    font-size: 15px;
+    border-width: 6px;
+  }
+
+  .punch-button::before {
+    inset: -6px;
+    padding: 6px;
   }
 }
 

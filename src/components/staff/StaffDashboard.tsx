@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { Clock, Calendar, FileText, CircleCheck as CheckCircle, Circle as XCircle, CircleAlert as AlertCircle , Camera, MapPin, TriangleAlert as AlertTriangle,  RefreshCw } from 'lucide-react'
-import { getUserAttendanceSummary, getUserLeaveRequests, punchInOut } from '../../lib/database'
-import { StaffDashboardProps, Notification, AttendanceSummary } from '../../types'
+import { getUserAttendanceSummary, getUserLeaveRequests, punchInOut, getUserAttendance } from '../../lib/database'
+import { StaffDashboardProps, Notification, AttendanceSummary, LocationCoords } from '../../types'
 import { cameraService } from '../../lib/cameraService'
 import { geofenceService } from '../../lib/geofenceService'
-// import { shiftValidationService, type Shift } from '../../lib/shiftValidation' // SHIFT MANAGEMENT DISABLED
+import { shiftValidationService, type Shift } from '../../lib/shiftValidation'
 import { locationService } from '../../lib/locationService'
 import { punchStateService } from '../../lib/punchStateService'
+import PunchConfirmationDialog from '../shared/PunchConfirmationDialog'
+import { pdfExportService } from '../../lib/pdfExportService'
 
 interface LeaveRequestSummary {
   id: string;
@@ -18,6 +20,15 @@ interface LeaveRequestSummary {
 
 interface ExtendedStaffDashboardProps extends StaffDashboardProps {
   onNavigate?: (section: string) => void;
+}
+
+interface AttendanceHistoryRecord {
+  date: string;
+  timeIn: string;
+  timeOut: string;
+  hours: string;
+  status: string;
+  location: string;
 }
 
 const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigate }) => {
@@ -59,6 +70,8 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
     }, 1000)
 
     checkPermissions()
+    loadStaffData()
+    loadAttendanceHistory()
 
     const initializePunchState = async () => {
       await punchStateService.initialize(user.id)
@@ -136,7 +149,76 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
       setLoading(false)
     }
   }
+  const loadAttendanceHistory = async (): Promise<void> => {
+    try {
+      const attendance = await getUserAttendance(user.id, 20)
+
+      const groupedAttendance: { [date: string]: any } = {}
+      attendance.forEach(record => {
+        const date = new Date(record.timestamp).toDateString()
+        if (!groupedAttendance[date]) {
+          groupedAttendance[date] = { date, timeIn: null, timeOut: null, location: null, geofenceStatus: null }
+        }
+
+        if (record.punch_type === 'in') {
+          groupedAttendance[date].timeIn = new Date(record.timestamp).toLocaleTimeString()
+          groupedAttendance[date].geofenceStatus = (record as any).is_within_geofence ? 'Inside Station' : 'Outside Station'
+          groupedAttendance[date].location = record.latitude && record.longitude ? 'Recorded' : 'Unknown'
+        } else if (record.punch_type === 'out') {
+          groupedAttendance[date].timeOut = new Date(record.timestamp).toLocaleTimeString()
+        }
+      })
+
+      const formattedHistory = Object.values(groupedAttendance).map((day: any) => {
+        let hours = '0'
+        let status = 'Absent'
+
+        if (day.timeIn && day.timeOut) {
+          const timeInDate = new Date(`${day.date} ${day.timeIn}`)
+          const timeOutDate = new Date(`${day.date} ${day.timeOut}`)
+          const diffHours = (timeOutDate.getTime() - timeInDate.getTime()) / (1000 * 60 * 60)
+          hours = diffHours.toFixed(2)
+          status = 'Present'
+        } else if (day.timeIn) {
+          status = 'Present'
+        }
+
+        return {
+          date: new Date(day.date).toLocaleDateString(),
+          timeIn: day.timeIn || '--',
+          timeOut: day.timeOut || '--',
+          hours,
+          status,
+          location: day.geofenceStatus || '--'
+        }
+      }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+      setAttendanceHistory(formattedHistory)
+    } catch (error) {
+      console.error('Error loading attendance history:', error)
+    }
+  }
+
   const handleRefreshLocation = async () => {
+    try {
+      showNotification('Refreshing location...', 'info')
+      const currentLocation = await locationService.getCurrentPosition()
+      setLocation({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude
+      })
+      const result = await checkGeofence(currentLocation.latitude, currentLocation.longitude)
+      await locationService.updateLocationInDatabase(currentLocation, true)
+
+      if (result.isValid) {
+        showNotification('Location updated: Inside station boundary', 'success')
+      } else {
+        showNotification('Location updated: Outside station boundary', 'error')
+      }
+    } catch (error) {
+      console.error('Error refreshing location:', error)
+      showNotification('Failed to refresh location. Please try again.', 'error')
+    }
   }
 
     const checkGeofence = async (latitude: number, longitude: number) => {
@@ -332,20 +414,41 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
 
   return (
     <div>
-      <h2 style={{ color: 'var(--navy-blue)', marginBottom: '30px', fontSize: '28px', fontWeight: '700' }}>
+      <h2 style={{
+        color: 'var(--navy-blue)',
+        marginBottom: '20px',
+        fontSize: 'clamp(22px, 5vw, 28px)',
+        fontWeight: '700'
+      }}>
         Staff Dashboard
       </h2>
 
       {/* Punch In/Out Section */}
-      <div className="card" style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <h3 className="card-title">Punch In / Punch Out</h3>
+      <div className="card" style={{
+        textAlign: 'center',
+        marginBottom: '30px',
+        padding: 'clamp(20px, 4vw, 25px)'
+      }}>
+        <h3 className="card-title" style={{
+          fontSize: 'clamp(18px, 4vw, 20px)',
+          justifyContent: 'center'
+        }}>
+          Punch In / Punch Out
+        </h3>
 
         {/* Current Time Display */}
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--navy-blue)' }}>
+          <div style={{
+            fontSize: 'clamp(20px, 5vw, 24px)',
+            fontWeight: 'bold',
+            color: 'var(--navy-blue)'
+          }}>
             {currentTime.toLocaleTimeString()}
           </div>
-          <div style={{ color: 'var(--dark-gray)' }}>
+          <div style={{
+            color: 'var(--dark-gray)',
+            fontSize: 'clamp(12px, 3vw, 14px)'
+          }}>
             {currentTime.toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -356,15 +459,15 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
         </div>
 
         {/* Punch Button */}
-        <div 
-          className="punch-button" 
+        <div
+          className="punch-button"
           onClick={handlePunch}
           style={{
             width: '200px',
             height: '200px',
             borderRadius: '50%',
-            background: isPunchedIn 
-              ? 'linear-gradient(135deg, var(--green), #2ecc71)' 
+            background: isPunchedIn
+              ? 'linear-gradient(135deg, var(--green), #2ecc71)'
               : 'linear-gradient(135deg, var(--navy-blue), #0f2951)',
             border: `8px solid ${isPunchedIn ? 'var(--green)' : 'var(--golden)'}`,
             color: 'var(--white)',
@@ -376,8 +479,26 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
             alignItems: 'center',
             justifyContent: 'center',
             textAlign: 'center',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+            transform: 'scale(1)',
+            userSelect: 'none'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)'
+            e.currentTarget.style.boxShadow = '0 15px 40px rgba(0,0,0,0.4)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)'
+            e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)'
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'scale(0.95)'
+            e.currentTarget.style.boxShadow = '0 5px 20px rgba(0,0,0,0.2)'
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)'
+            e.currentTarget.style.boxShadow = '0 15px 40px rgba(0,0,0,0.4)'
           }}
         >
           <div>
@@ -401,21 +522,48 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
         </div>
 
         {/* Location and Geofence Status */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '10px',
+          marginTop: '20px',
+          padding: '0 10px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexWrap: 'wrap',
+            justifyContent: 'center'
+          }}>
             <MapPin size={16} style={{ color: location ? 'var(--green)' : 'var(--red)' }} />
-            <span style={{ color: location ? 'var(--green)' : 'var(--red)', fontSize: '14px' }}>
+            <span style={{
+              color: location ? 'var(--green)' : 'var(--red)',
+              fontSize: 'clamp(13px, 3vw, 14px)',
+              textAlign: 'center'
+            }}>
               {location ? 'Location detected' : 'Location not available'}
             </span>
           </div>
           {location && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flexWrap: 'wrap',
+              justifyContent: 'center'
+            }}>
               {isWithinGeofence ? (
                 <CheckCircle size={16} style={{ color: 'var(--green)' }} />
               ) : (
                 <AlertTriangle size={16} style={{ color: 'var(--red)' }} />
               )}
-              <span style={{ color: isWithinGeofence ? 'var(--green)' : 'var(--red)', fontSize: '14px' }}>
+              <span style={{
+                color: isWithinGeofence ? 'var(--green)' : 'var(--red)',
+                fontSize: 'clamp(13px, 3vw, 14px)',
+                textAlign: 'center'
+              }}>
                 {isWithinGeofence ? 'Inside geofence boundary' : 'Outside geofence boundary'}
               </span>
             </div>
@@ -423,7 +571,14 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
           <button
             className="btn btn-secondary"
             onClick={handleRefreshLocation}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', padding: '8px 16px' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '10px',
+              padding: 'clamp(8px, 2vw, 10px) clamp(12px, 3vw, 16px)',
+              fontSize: 'clamp(13px, 3vw, 14px)'
+            }}
           >
             <RefreshCw size={16} />
             Refresh Location
@@ -431,10 +586,21 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
-          <button 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 'clamp(10px, 3vw, 20px)',
+          marginTop: '20px',
+          flexWrap: 'wrap',
+          padding: '0 10px'
+        }}>
+          <button
             className="btn btn-primary"
             onClick={() => showNotification('Opening detailed attendance view...', 'info')}
+            style={{
+              fontSize: 'clamp(13px, 3vw, 14px)',
+              padding: 'clamp(10px, 2.5vw, 12px) clamp(18px, 4vw, 24px)'
+            }}
           >
             <Calendar size={16} style={{ marginRight: '5px' }} />
             View All Records
@@ -443,6 +609,10 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
             className="btn btn-golden"
             onClick={handleExportPDF}
             disabled={attendanceHistory.length === 0}
+            style={{
+              fontSize: 'clamp(13px, 3vw, 14px)',
+              padding: 'clamp(10px, 2.5vw, 12px) clamp(18px, 4vw, 24px)'
+            }}
           >
             <FileText size={16} style={{ marginRight: '5px' }} />
             Export PDF
@@ -451,8 +621,13 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
       </div>
 
       {/* Attendance Summary */}
-      <div className="card" style={{ marginBottom: '30px' }}>
-        <h3 className="card-title">This Month's Attendance Summary</h3>
+      <div className="card" style={{
+        marginBottom: '30px',
+        padding: 'clamp(20px, 4vw, 25px)'
+      }}>
+        <h3 className="card-title" style={{ fontSize: 'clamp(18px, 4vw, 20px)' }}>
+          This Month's Attendance Summary
+        </h3>
         <div className="attendance-summary-grid">
           <div className="summary-item summary-present">
             <div className="summary-number">
@@ -482,8 +657,10 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
       </div>
 
       {/* Recent Leave Requests */}
-      <div className="card">
-        <h3 className="card-title">Recent Leave Requests</h3>
+      <div className="card" style={{ padding: 'clamp(20px, 4vw, 25px)' }}>
+        <h3 className="card-title" style={{ fontSize: 'clamp(18px, 4vw, 20px)' }}>
+          Recent Leave Requests
+        </h3>
         <div className="table-container">
           <table className="table">
             <thead>
@@ -540,9 +717,15 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
       </div>
 
       {/* Profile Summary */}
-      <div className="card">
-        <h3 className="card-title">Profile Information</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+      <div className="card" style={{ padding: 'clamp(20px, 4vw, 25px)' }}>
+        <h3 className="card-title" style={{ fontSize: 'clamp(18px, 4vw, 20px)' }}>
+          Profile Information
+        </h3>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 'clamp(15px, 3vw, 20px)'
+        }}>
           <div>
             <label style={{ fontWeight: '600', color: 'var(--navy-blue)', marginBottom: '5px', display: 'block' }}>
               Badge Number

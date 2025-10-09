@@ -259,8 +259,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
                   <th>Officer Details</th>
                   <th>Punch Type</th>
                   <th>Time</th>
-                  <th>Status</th>
                   <th>Location</th>
+                  <th>Coordinates</th>
                 </tr>
               </thead>
               <tbody>
@@ -314,10 +314,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
                       </div>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {record.isWithinGeofence !== undefined && (
+                          <span style={{
+                            padding: '6px 12px',
+                            borderRadius: '12px',
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            backgroundColor: record.isWithinGeofence ? '#d4edda' : '#f8d7da',
+                            color: record.isWithinGeofence ? '#155724' : '#721c24',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                          }}>
+                            <MapPin size={14} />
+                            {record.isWithinGeofence ? 'Inside' : 'Outside'}
+                          </span>
+                        )}
                         {record.complianceStatus && (
                           <span style={{
-                            padding: '2px 8px',
+                            padding: '4px 8px',
                             borderRadius: '8px',
                             fontSize: '11px',
                             fontWeight: '600',
@@ -347,18 +365,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
                             Grace period used
                           </small>
                         )}
-                        {record.isWithinGeofence !== undefined && (
-                          <small style={{
-                            color: record.isWithinGeofence ? '#2e7d32' : '#d32f2f',
-                            fontSize: '10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '2px'
-                          }}>
-                            <MapPin size={10} />
-                            {record.isWithinGeofence ? 'Inside fence' : 'Outside fence'}
-                          </small>
-                        )}
                       </div>
                     </td>
                     <td>
@@ -380,7 +386,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onNavigate }) => 
                             }}
                             onClick={() => {
                               if (onNavigate) {
-                                // Store the user_id in sessionStorage so LiveLocationView can filter
                                 sessionStorage.setItem('selectedUserId', record.id)
                                 onNavigate('live-location')
                               }
