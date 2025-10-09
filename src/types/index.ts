@@ -22,6 +22,7 @@ export interface AttendanceRecord {
   longitude?: number;
   photo_url?: string;
   status: 'active' | 'inactive';
+  is_within_geofence: boolean;
   created_at: string;
   profiles?: Profile;
 }
