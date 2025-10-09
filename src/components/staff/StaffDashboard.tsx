@@ -564,7 +564,7 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
                 fontSize: 'clamp(13px, 3vw, 14px)',
                 textAlign: 'center'
               }}>
-                {isWithinGeofence ? 'Inside geofence boundary' : 'Outside geofence boundary'}
+                {isWithinGeofence ? 'Inside station boundary' : 'Outside station boundary'}
               </span>
             </div>
           )}
