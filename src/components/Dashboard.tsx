@@ -448,8 +448,8 @@ const AttendanceLogsView: React.FC = () => {
     });
   };
 
-  const getStatusBadge = (punchType: string) => {
-    return punchType === 'in' ? 'status-present' : 'status-badge';
+  const getStatusBadge = (isWithinGeofence: boolean) => {
+    return isWithinGeofence ? 'status-present' : 'status-absent';
   };
 
   return (
@@ -554,10 +554,10 @@ const AttendanceLogsView: React.FC = () => {
                       <td>{formatTime(record.timestamp)}</td>
                       <td>{formatDate(record.timestamp)}</td>
                       <td>
-                        <span className={`status-badge ${getStatusBadge(record.punch_type)}`}>
-                          {record.status}
-                        </span>
-                      </td>
+                      <span className={`status-badge ${getStatusBadge(record.is_within_geofence)}`}>
+                        {record.is_within_geofence ? 'INSIDE STATION' : 'OUTSIDE STATION'}
+                      </span>
+                    </td> 
                     </tr>
                   ))}
                 </tbody>
