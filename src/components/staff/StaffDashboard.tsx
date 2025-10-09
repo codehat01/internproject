@@ -302,7 +302,12 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   const checkPermissions = async () => {
   }
 
-  
+    const showNotification = (message: string, type: Notification['type']): void => {
+    setNotification({ message, type, show: true })
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }))
+    }, 3000)
+  }
   
   if (loading) {
     return (
