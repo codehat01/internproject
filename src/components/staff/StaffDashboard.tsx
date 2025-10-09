@@ -556,6 +556,16 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
       <div className={`notification ${notification.type} ${notification.show ? 'show' : ''}`}>
         {notification.message}
       </div>
+      <PunchConfirmationDialog
+        isOpen={showConfirmDialog}
+        punchType={pendingPunchType}
+        photoDataUrl={capturedPhoto || ''}
+        location={location}
+        geofenceStatus={currentGeofenceStatus}
+        onConfirm={handleConfirmPunch}
+        onCancel={handleCancelPunch}
+        onRetakePhoto={handleRetakePhoto}
+      />
     </div>
   )
 }
