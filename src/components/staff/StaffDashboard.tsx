@@ -121,6 +121,12 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   const handleRefreshLocation = async () => {
   }
 
+    const checkGeofence = async (latitude: number, longitude: number) => {
+    const result = await geofenceService.validateLocation(latitude, longitude)
+    setIsWithinGeofence(result.isValid)
+    setCurrentGeofenceStatus(result.isValid ? 'Inside Station' : 'Outside Station')
+    return result
+  }
     const handleExportPDF = (): void => {
     try {
       pdfExportService.exportAttendanceReport(
