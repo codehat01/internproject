@@ -56,7 +56,6 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
-      updateGracePeriod()
     }, 1000)
 
     checkPermissions()
