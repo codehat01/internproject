@@ -52,39 +52,59 @@ const StaffDashboard: React.FC<ExtendedStaffDashboardProps> = ({ user, onNavigat
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
   const [pendingPunchType, setPendingPunchType] = useState<'in' | 'out'>('in')
 
+ 
   useEffect(() => {
-    loadStaffData()
-    // loadShiftData() // SHIFT MANAGEMENT DISABLED
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+      updateGracePeriod()
+    }, 1000)
+
+    checkPermissions()
+    loadAttendanceHistory()
 
     const initializePunchState = async () => {
       await punchStateService.initialize(user.id)
       const state = punchStateService.getCurrentState()
       setIsPunchedIn(state.isPunchedIn)
       setLastPunchInTime(state.lastPunchTime)
-      if (state.lastPunchTime) {
-        setPunchTime(state.lastPunchTime.toLocaleTimeString())
-      }
     }
     initializePunchState()
 
     const unsubscribe = punchStateService.subscribe((state) => {
       setIsPunchedIn(state.isPunchedIn)
       setLastPunchInTime(state.lastPunchTime)
-      if (state.lastPunchTime) {
-        setPunchTime(state.lastPunchTime.toLocaleTimeString())
-      }
     })
 
+    const initializeLocation = async () => {
+      try {
+        const currentLocation = await locationService.getCurrentPosition()
+        setLocation({
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude
+        })
+        await checkGeofence(currentLocation.latitude, currentLocation.longitude)
+      } catch (error) {
+        console.error('Error getting initial location:', error)
+      }
+    }
+
+    initializeLocation()
+
     locationService.startTracking(user.id, async (loc) => {
-      const result = await geofenceService.validateLocation(loc.latitude, loc.longitude)
-      setIsWithinGeofence(result.isValid)
+      setLocation({
+        latitude: loc.latitude,
+        longitude: loc.longitude
+      })
+      await checkGeofence(loc.latitude, loc.longitude)
     })
 
     return () => {
+      clearInterval(timer)
       locationService.stopTracking()
       unsubscribe()
     }
   }, [user.id])
+
 
   // const loadShiftData = async (): Promise<void> => {
   //   const shift = await shiftValidationService.getCurrentShift(user.id)
