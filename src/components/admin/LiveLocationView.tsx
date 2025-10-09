@@ -287,8 +287,8 @@ const LiveLocationView: React.FC = () => {
         </div>
       </div>
 
-      <div className="card" style={{ height: '600px', padding: '20px', boxSizing: 'border-box', overflow: 'hidden' }}>
-        <div style={{ height: 'calc(100% - 40px)', width: '100%', borderRadius: '10px', overflow: 'hidden', boxSizing: 'border-box', position: 'relative' }}>
+      <div className="card" style={{ padding: '20px', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <div style={{ height: 'min(60vh, 500px)', width: '100%', borderRadius: '10px', overflow: 'hidden', boxSizing: 'border-box', position: 'relative' }}>
           <MapContainer
             center={mapCenter}
             zoom={13}
